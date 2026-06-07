@@ -3206,7 +3206,7 @@
             // BEGIN PHASE 4
             // Media thumbnail
             if (mem.type === 'media') {
-                const imgTag = mem.media_url 
+                const imgTag = mem.media_url
                     ? `<img src="${mem.media_url}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" alt="Uploaded media">`
                     : `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" aria-hidden="true">
                                 <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -3601,7 +3601,7 @@
     const fileInput = document.getElementById('mediaInput');
     const demoFile = document.getElementById('demoExifFile');
     const exifPill = document.getElementById('exifPill');
-    
+
     let currentMediaFile = null;
 
     dropzone.addEventListener('click', () => fileInput.click());
@@ -3695,7 +3695,7 @@
                 type = 'media';
                 sha256_hash = await sha256File(currentMediaFile);
                 const fileName = `${activeCase}/${Date.now()}_${currentMediaFile.name}`;
-                
+
                 const { data: uploadData, error: uploadError } = await supabaseClient
                     .storage
                     .from('evidence')
@@ -3715,14 +3715,14 @@
                     {
                         safespace_id: activeCase,
                         type: type,
-                        content: isMedia ? '' : content,
+                        content: content,
                         confidence: selectedConfidence,
                         sha256_hash: sha256_hash,
                         media_url: media_url,
                         language: currentLanguage
                     }
                 ]);
-    // END PHASE 4
+            // END PHASE 4
 
             if (error) throw error;
 
