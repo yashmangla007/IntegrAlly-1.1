@@ -13,6 +13,7 @@
         rel="stylesheet">
     <script src="theme.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         /* ═══════════════════════════════════════════
@@ -2871,8 +2872,8 @@
                         <button class="format-btn">Word Document (.docx)</button>
                     </div>
 
-                    <button class="doc-download-btn doc-download-btn-filled" onclick="startGatherDownload()">Download
-                        Document 1</button>
+                    <button id="downloadDoc1Btn" class="doc-download-btn doc-download-btn-filled">Download Document
+                        1</button>
                 </div>
 
                 <!-- Doc 2 -->
@@ -3448,6 +3449,307 @@
         setTimeout(() => {
             downloadOverlay.classList.remove('show');
         }, 5000);
+    }
+
+    async function generateRecordPDF() {
+        const downloadOverlay = document.getElementById('downloadOverlay');
+        const dlTitle = document.getElementById('dlTitle');
+        if (downloadOverlay) {
+            if (dlTitle) dlTitle.textContent = "Gathering your story...";
+            downloadOverlay.classList.add('show');
+        }
+
+        try {
+            if (!supabaseClient || !activeCase) {
+                alert("Supabase client or active case is not initialized.");
+                if (downloadOverlay) downloadOverlay.classList.remove('show');
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('memories')
+                .select('*')
+                .eq('safespace_id', activeCase)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            const fetchedMemories = data || [];
+            const caseName = document.getElementById('sidebarName')
+                ? document.getElementById('sidebarName').textContent.trim()
+                : activeCase;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const margin = 20;
+            const contentWidth = 170;
+            let y = 25;
+
+            const confidenceLabels = {
+                1: "Hazy",
+                2: "Partial",
+                3: "Moderate",
+                4: "Clear",
+                5: "Very clear"
+            };
+
+            function checkPageBreak(neededHeight) {
+                if (y + neededHeight > 275) {
+                    doc.addPage();
+                    y = margin;
+                }
+            }
+
+            // --- Cover Page / Title Block ---
+            doc.setFillColor(240, 235, 225);
+            doc.rect(margin, y, contentWidth, 45, 'F');
+
+            doc.setDrawColor(78, 117, 100);
+            doc.setLineWidth(1);
+            doc.rect(margin, y, contentWidth, 45, 'S');
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.setTextColor(78, 117, 100);
+            doc.text("YOUR COMPLETE MEMORY RECORD", margin + 8, y + 12);
+
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setTextColor(164, 127, 138);
+            doc.text("IntegrAlly Safespace - Authenticated Case Document", margin + 8, y + 18);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(45, 74, 62);
+            doc.text(`Case ID: ${caseName}`, margin + 8, y + 27);
+            doc.text(`Safespace Reference: ${activeCase}`, margin + 8, y + 32);
+            doc.text(`Generated On: ${new Date().toLocaleString('en-GB')}`, margin + 8, y + 37);
+            doc.text(`Total Records Compiled: ${fetchedMemories.length}`, margin + 8, y + 42);
+
+            y += 55;
+
+            // --- Memories Section ---
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(78, 117, 100);
+            doc.text("Timeline of Compiled Memories", margin, y);
+            y += 10;
+
+            if (fetchedMemories.length === 0) {
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(11);
+                doc.setTextColor(164, 127, 138);
+                doc.text("No memories have been added to this Safespace yet.", margin, y);
+                y += 10;
+            } else {
+                fetchedMemories.forEach((mem, index) => {
+                    checkPageBreak(50);
+
+                    // Memory Header
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(12);
+                    doc.setTextColor(45, 74, 62);
+                    doc.text(`Memory #${index + 1}`, margin, y);
+                    y += 6;
+
+                    // Metadata
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(9);
+                    doc.setTextColor(164, 127, 138);
+
+                    const dateObj = new Date(mem.created_at);
+                    const formattedDate = dateObj.toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                    }) + ', ' + dateObj.toLocaleTimeString('en-GB', {
+                        hour: 'numeric', minute: '2-digit', hour12: true
+                    });
+
+                    doc.text(`Timestamp: ${formattedDate}`, margin, y);
+                    y += 5;
+
+                    doc.setTextColor(45, 74, 62);
+                    const confidenceVal = mem.confidence || 3;
+                    const confidenceLbl = confidenceLabels[confidenceVal] || "Moderate";
+                    doc.text(`Method: ${mem.type === 'text' ? 'Written' : (mem.type ? mem.type.charAt(0).toUpperCase() + mem.type.slice(1) : 'Written')} | Certainty Rating: ${confidenceVal} (${confidenceLbl})`, margin, y);
+                    y += 5;
+
+                    // Integrity SHA-256 Hash
+                    doc.setFont("courier", "normal");
+                    doc.setFontSize(8);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`SHA-256 Hash: ${mem.sha256_hash || 'Pending/No Hash'}`, margin, y);
+                    y += 5;
+
+                    // Media URL reference (if present)
+                    if (mem.media_url) {
+                        doc.setFont("helvetica", "normal");
+                        doc.setFontSize(9);
+                        doc.setTextColor(78, 117, 100);
+                        doc.text("Attachment Link:", margin, y);
+
+                        doc.setTextColor(0, 0, 255);
+
+                        doc.textWithLink(
+                            "Open Attachment",
+                            margin + 35,
+                            y,
+                            {
+                                url: mem.media_url
+                            }
+                        );
+
+                        doc.setTextColor(0, 0, 0);
+
+                        y += 6;
+                    }
+
+                    // Content Text
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(10);
+                    doc.setTextColor(45, 74, 62);
+                    const contentText = mem.content || `[Voice memory uploaded securely. Playback available on active dashboard device]`;
+                    const wrappedLines = doc.splitTextToSize(contentText, contentWidth);
+
+                    y += 2;
+                    wrappedLines.forEach(lineText => {
+                        checkPageBreak(6);
+                        doc.text(lineText, margin, y);
+                        y += 5;
+                    });
+
+                    // Separator line
+                    y += 3;
+                    checkPageBreak(5);
+                    doc.setDrawColor(229, 221, 208);
+                    doc.setLineWidth(0.5);
+                    doc.line(margin, y, margin + contentWidth, y);
+                    y += 8;
+                });
+            }
+
+            // --- BSA Section 63 Certificate ---
+            doc.addPage();
+            y = margin;
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(45, 74, 62);
+            doc.text("CERTIFICATE UNDER SECTION 63 OF THE BHARATIYA SAKSHYA ADHINIYAM, 2023", margin, y);
+            y += 6;
+
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setTextColor(164, 127, 138);
+            doc.text("For the Admissibility of Electronic Records", margin, y);
+            y += 12;
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(45, 74, 62);
+
+            const certIntro = `I, the owner/operator of the digital system known as IntegrAlly Safespace, do hereby certify that:`;
+            doc.text(certIntro, margin, y);
+            y += 8;
+
+            const certPoints = [
+                `1. The electronic records compiled herein (Case: ${caseName}, Safespace ID: ${activeCase}) consist of ${fetchedMemories.length} memory entries preserved on the dates and times specified.`,
+                `2. The digital entries were captured, stored, and compiled in the ordinary course of system activity.`,
+                `3. Cryptographic SHA-256 hashes were generated immediately upon receipt of each entry to verify that the integrity of the data remains completely untampered.`,
+                `4. Below is the list of compiled electronic items and their verification hashes:`
+            ];
+
+            certPoints.forEach(pt => {
+                const wrapped = doc.splitTextToSize(pt, contentWidth);
+                wrapped.forEach(line => {
+                    checkPageBreak(6);
+                    doc.text(line, margin, y);
+                    y += 5;
+                });
+                y += 3;
+            });
+
+            // Hashes Table/List in Certificate
+            y += 2;
+            doc.setFont("courier", "normal");
+            doc.setFontSize(8.5);
+            doc.setTextColor(100, 100, 100);
+
+            fetchedMemories.forEach((mem, index) => {
+                checkPageBreak(6);
+                const hashStr = mem.sha256_hash ? mem.sha256_hash.slice(0, 32) + "..." + mem.sha256_hash.slice(-8) : 'N/A';
+                doc.text(`Memory #${index + 1} (${mem.type || 'text'}): ${hashStr}`, margin + 5, y);
+                y += 5.5;
+            });
+
+            y += 4;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(45, 74, 62);
+
+            const certOutro = `5. The digital devices and data transmission systems used were operating properly at all relevant times and the data integrity of all entries remains fully intact.`;
+            const wrappedOutro = doc.splitTextToSize(certOutro, contentWidth);
+            wrappedOutro.forEach(line => {
+                checkPageBreak(6);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+            y += 15;
+
+            checkPageBreak(30);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("Verified By:", margin, y);
+            y += 15;
+
+            doc.setDrawColor(164, 127, 138);
+            doc.setLineWidth(0.5);
+            doc.line(margin, y, margin + 60, y);
+            y += 5;
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text("Case Owner / Certifier Signature", margin, y);
+            doc.text(`Date of Compilation: ${new Date().toLocaleDateString('en-GB')}`, margin + 80, y);
+            doc.text("Place: digital_safe_device", margin + 80, y + 5);
+
+            // --- Headers / Footers Addition (2-Pass Page Numbering) ---
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+
+                doc.setDrawColor(229, 221, 208);
+                doc.setLineWidth(0.5);
+                doc.line(margin, 15, 210 - margin, 15);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.setTextColor(164, 127, 138);
+                doc.text(`IntegrAlly Memory Record | Case: ${caseName}`, margin, 12);
+
+                doc.text(`Page ${i} of ${totalPages}`, 210 - margin - 20, 287);
+            }
+
+            doc.save(`${caseName}_record.pdf`);
+
+            if (dlTitle) dlTitle.textContent = "Gathering complete!";
+            setTimeout(() => {
+                if (downloadOverlay) downloadOverlay.classList.remove('show');
+            }, 1000);
+
+        } catch (err) {
+            console.error("PDF Generation Error:", err);
+            alert("Failed to generate PDF. Please try again.");
+            if (downloadOverlay) downloadOverlay.classList.remove('show');
+        }
+    }
+
+    const downloadDoc1Btn = document.getElementById('downloadDoc1Btn');
+    if (downloadDoc1Btn) {
+        downloadDoc1Btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await generateRecordPDF();
+        });
     }
 
     // Format toggle logic
