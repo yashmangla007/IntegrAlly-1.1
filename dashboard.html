@@ -1,0 +1,3804 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IntegrAlly — Your Safespace dashboard. View and manage your preserved memories.">
+    <title>IntegrAlly — Your Safespace</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Nunito:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script src="theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* ═══════════════════════════════════════════
+           DESIGN TOKENS
+           ═══════════════════════════════════════════ */
+        :root {
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --amber-glow: #D4884A;
+            --fog: rgba(247, 244, 238, 0.92);
+
+            --font-display: 'Lora', Georgia, serif;
+            --font-body: 'Nunito', system-ui, sans-serif;
+
+            --text-display: clamp(2.5rem, 5vw, 3.75rem);
+            --text-h1: clamp(1.5rem, 3vw, 2.25rem);
+            --text-h2: 1.375rem;
+            --text-body: 1rem;
+            --text-small: 0.875rem;
+            --text-micro: 0.75rem;
+
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 40px;
+            --radius-pill: 100px;
+
+            --shadow-whisper: 0 2px 12px rgba(45, 74, 62, 0.06);
+            --shadow-soft: 0 4px 24px rgba(45, 74, 62, 0.10);
+            --shadow-card: 0 8px 40px rgba(45, 74, 62, 0.12);
+
+            --ease-gentle: cubic-bezier(0.34, 1.02, 0.64, 1);
+            --ease-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --duration-fast: 180ms;
+            --duration-mid: 320ms;
+            --duration-slow: 600ms;
+            --duration-breathe: 4000ms;
+
+            --sidebar-width: 280px;
+        }
+
+        /* Dark Mode — Preference Sync */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ivory: #1A1F1C;
+                --ivory-warm: #222B26;
+                --ivory-deep: #2D3830;
+                --sage: #6B9E8A;
+                --sage-light: #4E7564;
+                --sage-deep: #8BBDAA;
+                --forest: #E8EDE9;
+                --mauve: #C4A0AC;
+                --mauve-light: #6B4E57;
+                --amber-glow: #D4884A;
+                --fog: rgba(26, 31, 28, 0.92);
+            }
+
+            .gather-note {
+                background: rgba(107, 158, 138, 0.12);
+                border-color: rgba(107, 158, 138, 0.30);
+            }
+        }
+
+        /* ── THEME OVERRIDES ── */
+        .dark-mode {
+            --ivory: #1A1F1C;
+            --ivory-warm: #222B26;
+            --ivory-deep: #2D3830;
+            --sage: #6B9E8A;
+            --sage-light: #4E7564;
+            --sage-deep: #8BBDAA;
+            --forest: #E8EDE9;
+            --mauve: #C4A0AC;
+            --mauve-light: #6B4E57;
+            --amber-glow: #D4884A;
+            --fog: rgba(26, 31, 28, 0.92);
+        }
+
+        .dark-mode .gather-note {
+            background: rgba(107, 158, 138, 0.12);
+            border-color: rgba(107, 158, 138, 0.30);
+        }
+
+        /* Manual Light Mode Override (Overrides system preference) */
+        .light-mode {
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --amber-glow: #D4884A;
+            --fog: rgba(247, 244, 238, 0.92);
+        }
+
+        .light-mode .gather-note {
+            background: rgba(122, 158, 142, 0.08);
+            /* sage-light tint */
+            border-color: rgba(122, 158, 142, 0.15);
+        }
+
+        /* ═══════════════════════════════════════════
+           RESETS & BASE
+           ═══════════════════════════════════════════ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--ivory);
+            color: var(--forest);
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--font-display);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        *:focus-visible {
+            outline: 3px solid var(--sage);
+            outline-offset: 3px;
+        }
+
+        /* --- Global Nav Header --- */
+        .global-nav {
+            height: 64px;
+            background: var(--fog);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(164, 127, 138, 0.12);
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 32px;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .wordmark {
+            font-size: 22px;
+            color: var(--forest);
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .wordmark span {
+            color: var(--sage);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .lang-toggle {
+            background: var(--ivory-deep);
+            color: var(--forest);
+            border-radius: var(--radius-pill);
+            height: 32px;
+            padding: 0 12px;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: 16px;
+            transition: transform var(--duration-fast);
+        }
+
+        .lang-toggle:hover {
+            transform: scale(1.02);
+        }
+
+        .lang-toggle .active {
+            color: var(--sage);
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 12px;
+            transition: all var(--duration-fast);
+        }
+
+        .theme-toggle:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 12px;
+            transition: all var(--duration-fast);
+        }
+
+        .theme-toggle:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        .help-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+
+        .help-btn:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        /* --- Help Drawer --- */
+        .help-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 31, 28, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid);
+            z-index: 200;
+            backdrop-filter: blur(4px);
+        }
+
+        .help-drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .help-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 320px;
+            height: 100vh;
+            background: var(--ivory-warm);
+            box-shadow: var(--shadow-card);
+            transition: transform var(--duration-mid);
+            z-index: 201;
+            padding: 32px;
+            border-left: 1px solid rgba(164, 127, 138, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .help-drawer.open {
+            transform: translateX(-320px);
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .drawer-header h2 {
+            font-size: 20px;
+            font-family: var(--font-display);
+            color: var(--forest);
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--mauve);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--duration-fast);
+        }
+
+        .close-btn:hover {
+            background: var(--ivory-deep);
+        }
+
+        .drawer-content h3 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--sage);
+            margin-top: 24px;
+            margin-bottom: 8px;
+        }
+
+        .drawer-content p {
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.85;
+        }
+
+        @media (max-width: 480px) {
+            .global-nav {
+                padding: 0 16px;
+            }
+
+            .wordmark {
+                font-size: 18px;
+            }
+
+            .help-drawer {
+                width: 100%;
+                right: -100%;
+            }
+
+            .help-drawer.open {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           DASHBOARD LAYOUT — 2-COLUMN
+           ═══════════════════════════════════════════ */
+        .dashboard {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            height: 100%;
+            background: var(--ivory-warm);
+            border-right: 1px solid rgba(164, 127, 138, 0.12);
+            display: flex;
+            flex-direction: column;
+            padding: 32px 24px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* Greeting */
+        .sidebar-greeting {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-welcome {
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 300;
+            color: var(--mauve);
+        }
+
+        .sidebar-name {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--forest);
+            margin-top: 2px;
+        }
+
+        .sidebar-rule {
+            width: 100%;
+            height: 1px;
+            background: var(--sage-light);
+            border: none;
+            margin-top: 16px;
+        }
+
+        /* Action buttons */
+        .sidebar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            width: 100%;
+            height: 72px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 14px;
+            cursor: pointer;
+            border: none;
+            text-align: left;
+            transition: background var(--duration-fast) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft),
+                border-color var(--duration-fast) var(--ease-soft);
+        }
+
+        .action-btn-primary {
+            background: var(--sage);
+        }
+
+        .action-btn-primary:hover {
+            background: var(--sage-deep);
+            transform: scale(1.01);
+        }
+
+        .action-btn-primary .action-icon {
+            color: var(--ivory);
+        }
+
+        .action-btn-primary .action-label {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--ivory);
+        }
+
+        .action-btn-primary .action-sub {
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 300;
+            color: rgba(247, 244, 238, 0.75);
+        }
+
+        .action-btn-primary .action-arrow {
+            color: var(--ivory);
+        }
+
+        .action-btn-secondary {
+            background: transparent;
+            border: 1.5px solid var(--sage);
+        }
+
+        .action-btn-secondary:hover {
+            background: rgba(122, 158, 142, 0.06);
+            border-color: var(--sage-deep);
+        }
+
+        .action-btn-secondary .action-icon {
+            color: var(--sage);
+        }
+
+        .action-btn-secondary .action-label {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--sage);
+        }
+
+        .action-btn-secondary .action-sub {
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 300;
+            color: var(--mauve);
+        }
+
+        .action-btn-secondary .action-arrow {
+            color: var(--sage);
+        }
+
+        .action-text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.4;
+        }
+
+        /* Instructional note */
+        .sidebar-note {
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.60;
+            line-height: 1.75;
+            margin-bottom: 24px;
+        }
+
+        /* Stat pills */
+        .sidebar-stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: auto;
+        }
+
+        .stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--ivory-deep);
+            border-radius: var(--radius-pill);
+            padding: 10px 16px;
+            font-family: var(--font-body);
+            font-size: 13px;
+        }
+
+        .stat-pill.memory-count {
+            color: var(--forest);
+        }
+
+        .stat-pill.last-added {
+            color: var(--mauve);
+        }
+
+        /* ── MAIN PANEL ── */
+        .main-panel {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Panel header */
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 28px 40px 16px;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--forest);
+        }
+
+        .sort-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--ivory-deep);
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 8px 16px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--forest);
+            cursor: pointer;
+            transition: background var(--duration-fast);
+        }
+
+        .sort-toggle:hover {
+            background: var(--mauve-light);
+        }
+
+        /* ═══════════════════════════════════════════
+           RIVER TIMELINE
+           ═══════════════════════════════════════════ */
+        .timeline-container {
+            flex: 1;
+            position: relative;
+            padding: 20px 40px 80px;
+            min-height: 600px;
+        }
+
+        /* The SVG river — full-width of container, behind cards */
+        .river-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: visible;
+        }
+
+        /* Main river stroke — dashed, sinuous */
+        .river-path {
+            fill: none;
+            stroke: var(--mauve-light);
+            stroke-opacity: 0.55;
+            stroke-width: 2;
+            stroke-dasharray: 6 4;
+            stroke-linecap: round;
+        }
+
+        /* Glow layer behind dashed path — same shape, wider, blurred via filter */
+        .river-path-glow {
+            fill: none;
+            stroke: var(--mauve-light);
+            stroke-opacity: 0.18;
+            stroke-width: 10;
+            stroke-linecap: round;
+            filter: url(#riverGlow);
+        }
+
+        /* Connector line from card edge to river curve */
+        .river-connector {
+            fill: none;
+            stroke: var(--mauve-light);
+            stroke-opacity: 0.35;
+            stroke-width: 1;
+            stroke-dasharray: 3 3;
+            stroke-linecap: round;
+        }
+
+        /* Terminal petal / teardrop */
+        .river-terminal {
+            fill: var(--mauve-light);
+            opacity: 0.35;
+        }
+
+        .river-terminal-outline {
+            fill: none;
+            stroke: var(--mauve-light);
+            stroke-opacity: 0.5;
+            stroke-width: 1.5;
+        }
+
+        /* Timeline track — positions cards */
+        .timeline-track {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 52px;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* Each memory node */
+        .memory-node {
+            display: flex;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        /* Left cards: pushed to the left, away from center */
+        .memory-node.left {
+            justify-content: flex-start;
+            padding-right: calc(50% + 20px);
+        }
+
+        /* Right cards: pushed to the right, away from center */
+        .memory-node.right {
+            justify-content: flex-end;
+            padding-left: calc(50% + 20px);
+        }
+
+        /* Stone dot on the river — marks where a card attaches */
+        .stone-dot {
+            position: absolute;
+            top: 38px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--mauve-light);
+            opacity: 0.55;
+            z-index: 2;
+            box-shadow: 0 0 6px 2px rgba(164, 126, 138, 0.25);
+        }
+
+        /* ═══════════════════════════════════════════
+           MEMORY CARD ("Stone")
+           ═══════════════════════════════════════════ */
+        .memory-card {
+            width: 280px;
+            min-height: 120px;
+            background: var(--ivory-warm);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(164, 127, 138, 0.15);
+            border-left: 3px solid var(--sage);
+            box-shadow: var(--shadow-whisper);
+            padding: 16px 18px;
+            position: relative;
+            cursor: pointer;
+            transition: box-shadow var(--duration-mid) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft);
+        }
+
+        .memory-card:hover {
+            box-shadow: var(--shadow-soft);
+            transform: translateY(-2px);
+        }
+
+        /* Card top row */
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        /* Type badge */
+        .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .type-badge.written {
+            background: var(--sage-light);
+            color: var(--sage-deep);
+        }
+
+        .type-badge.voice {
+            background: var(--mauve-light);
+            color: var(--mauve);
+        }
+
+        .type-badge.media {
+            background: rgba(212, 136, 74, 0.15);
+            color: var(--amber-glow);
+        }
+
+        .type-badge.guardian {
+            background: var(--ivory-deep);
+            color: var(--forest);
+        }
+
+        /* Date */
+        .card-date {
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 300;
+            color: var(--mauve);
+            opacity: 0.70;
+            white-space: nowrap;
+        }
+
+        /* Preview text */
+        .card-preview {
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.85;
+            line-height: 1.65;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 12px;
+        }
+
+        .memory-card.expanded .card-preview {
+            -webkit-line-clamp: unset;
+            line-clamp: unset;
+            overflow: visible;
+        }
+
+        /* Voice waveform */
+        .voice-wave {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 32px;
+            margin-bottom: 12px;
+        }
+
+        .voice-wave .bar {
+            width: 4px;
+            border-radius: 2px;
+            background: var(--sage-light);
+            animation: wave-pulse 1.4s ease-in-out infinite;
+        }
+
+        .voice-wave .bar:nth-child(1) {
+            height: 12px;
+            animation-delay: 0s;
+        }
+
+        .voice-wave .bar:nth-child(2) {
+            height: 20px;
+            animation-delay: 0.15s;
+        }
+
+        .voice-wave .bar:nth-child(3) {
+            height: 28px;
+            animation-delay: 0.3s;
+        }
+
+        .voice-wave .bar:nth-child(4) {
+            height: 16px;
+            animation-delay: 0.45s;
+        }
+
+        .voice-wave .bar:nth-child(5) {
+            height: 24px;
+            animation-delay: 0.6s;
+        }
+
+        .voice-wave .bar:nth-child(6) {
+            height: 10px;
+            animation-delay: 0.75s;
+        }
+
+        .voice-wave .bar:nth-child(7) {
+            height: 18px;
+            animation-delay: 0.9s;
+        }
+
+        @keyframes wave-pulse {
+
+            0%,
+            100% {
+                transform: scaleY(1);
+            }
+
+            50% {
+                transform: scaleY(0.4);
+            }
+        }
+
+        /* Media thumbnail */
+        .media-thumb {
+            width: 100%;
+            height: 80px;
+            border-radius: var(--radius-sm);
+            background: var(--ivory-deep);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .media-thumb svg {
+            color: var(--mauve);
+        }
+
+        /* Confidence dots */
+        .confidence-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .confidence-label {
+            font-family: var(--font-body);
+            font-size: 11px;
+            color: var(--mauve);
+        }
+
+        .confidence-dots {
+            display: flex;
+            gap: 4px;
+            position: relative;
+        }
+
+        .conf-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--ivory-deep);
+        }
+
+        .conf-dot.filled {
+            background: var(--amber-glow);
+        }
+
+        /* Confidence tooltip */
+        .confidence-tooltip {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            background: var(--fog);
+            backdrop-filter: blur(4px);
+            color: var(--forest);
+            font-family: var(--font-body);
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-soft);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid);
+            z-index: 20;
+        }
+
+        .confidence-dots:hover .confidence-tooltip {
+            opacity: 1;
+        }
+
+        /* Card actions (… menu) */
+        .card-bottom {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .card-menu-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--mauve);
+            font-size: 16px;
+            letter-spacing: 2px;
+            transition: background var(--duration-fast);
+        }
+
+        .card-menu-btn:hover {
+            background: var(--ivory-deep);
+        }
+
+        /* Dropdown */
+        .card-dropdown {
+            position: absolute;
+            bottom: 38px;
+            right: 12px;
+            background: var(--ivory-warm);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(164, 127, 138, 0.15);
+            padding: 6px 0;
+            z-index: 30;
+            min-width: 170px;
+            display: none;
+        }
+
+        .card-dropdown.open {
+            display: block;
+        }
+
+        .card-dropdown button {
+            width: 100%;
+            padding: 10px 18px;
+            border: none;
+            background: transparent;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--forest);
+            text-align: left;
+            cursor: pointer;
+            transition: background var(--duration-fast);
+        }
+
+        .card-dropdown button:hover {
+            background: rgba(122, 158, 142, 0.06);
+        }
+
+        /* ═══════════════════════════════════════════
+           EMPTY STATE
+           ═══════════════════════════════════════════ */
+        .empty-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 40px;
+            flex: 1;
+        }
+
+        .empty-state.visible {
+            display: flex;
+        }
+
+        .empty-state h3 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--forest);
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--mauve);
+            line-height: 1.75;
+            max-width: 400px;
+            margin-bottom: 24px;
+        }
+
+        /* ═══════════════════════════════════════════
+           QUICK EXIT
+           ═══════════════════════════════════════════ */
+        .quick-exit-wrapper {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 900;
+        }
+
+        .keyboard-hint {
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 300;
+            color: var(--mauve);
+        }
+
+        .quick-exit-btn {
+            width: 140px;
+            height: 44px;
+            border-radius: var(--radius-pill);
+            background: var(--sage);
+            color: var(--ivory);
+            border: none;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            position: relative;
+            animation: heartbeat-pulse 3s infinite var(--ease-gentle);
+            transition: background var(--duration-fast) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft);
+        }
+
+        .quick-exit-btn:hover {
+            background: var(--sage-deep);
+            transform: scale(1.02);
+            animation: none;
+        }
+
+        .quick-exit-tooltip {
+            position: absolute;
+            top: -42px;
+            background: var(--fog);
+            color: var(--forest);
+            font-family: var(--font-body);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-soft);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid) var(--ease-gentle) 200ms;
+            border: 1px solid rgba(164, 127, 138, 0.15);
+        }
+
+        .quick-exit-btn:hover .quick-exit-tooltip {
+            opacity: 1;
+        }
+
+        @keyframes heartbeat-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(122, 158, 142, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(122, 158, 142, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(122, 158, 142, 0);
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           MOBILE FAB + BOTTOM SHEET
+           ═══════════════════════════════════════════ */
+        .mobile-fab {
+            display: none;
+            position: fixed;
+            bottom: 96px;
+            left: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--sage);
+            color: var(--ivory);
+            border: none;
+            box-shadow: var(--shadow-soft);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(45, 74, 62, 0.3);
+            z-index: 400;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        /* ═══════════════════════════════════════════
+           GATHER MY STORY PAGE
+           ═══════════════════════════════════════════ */
+        .panel-fade {
+            opacity: 1;
+            transition: opacity 400ms var(--ease-soft);
+        }
+
+        .panel-fade.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .gather-panel {
+            position: absolute;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            bottom: 0;
+            background: var(--ivory);
+            z-index: 5;
+            overflow-y: auto;
+        }
+
+        .gather-content {
+            padding: 40px 60px 80px;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .gather-intro {
+            margin-bottom: 48px;
+        }
+
+        .gather-h1 {
+            font-family: var(--font-display);
+            font-size: 26px;
+            color: var(--forest);
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .gather-p {
+            font-family: var(--font-body);
+            font-size: 15px;
+            color: var(--mauve);
+            line-height: 1.75;
+            margin-bottom: 24px;
+            max-width: 800px;
+        }
+
+        .gather-note {
+            background: rgba(122, 158, 142, 0.08);
+            border: 1px solid rgba(122, 158, 142, 0.20);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .gather-note-icon {
+            color: var(--sage);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .gather-note p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.80;
+            line-height: 1.75;
+            margin: 0;
+        }
+
+        .doc-cards {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .doc-card {
+            flex: 1;
+            background: var(--ivory-warm);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-card);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .doc-illus {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            height: 80px;
+        }
+
+        .doc-badge {
+            align-self: flex-start;
+            background: var(--ivory-deep);
+            color: var(--forest);
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            margin-bottom: 16px;
+        }
+
+        .doc-badge.amber {
+            background: rgba(212, 136, 74, 0.15);
+            color: var(--amber-glow);
+        }
+
+        .doc-title {
+            font-family: var(--font-display);
+            font-size: 20px;
+            color: var(--forest);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .doc-desc {
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.70;
+            line-height: 1.75;
+            margin-bottom: 24px;
+        }
+
+        .doc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 32px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .doc-list li {
+            position: relative;
+            padding-left: 24px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.80;
+            line-height: 1.6;
+        }
+
+        .doc-list li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 14px;
+            height: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A9E8E' stroke-width='2'%3E%3Cpath d='M11 20A7 7 0 0 1 4 13V4h9a7 7 0 0 1 7 7v9h-9Z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .doc-formats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: auto;
+            padding-bottom: 32px;
+        }
+
+        .format-btn {
+            background: var(--ivory-deep);
+            color: var(--forest);
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 8px 16px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--duration-fast), color var(--duration-fast);
+        }
+
+        .format-btn:hover {
+            background: var(--sage-light);
+        }
+
+        .format-btn.active {
+            background: var(--sage);
+            color: var(--ivory);
+        }
+
+        .doc-format-note {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--mauve);
+            line-height: 1.5;
+            margin-bottom: 32px;
+            margin-top: -16px;
+        }
+
+        .doc-download-btn {
+            width: 100%;
+            height: 56px;
+            border-radius: var(--radius-pill);
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform var(--duration-fast), background var(--duration-fast);
+        }
+
+        .doc-download-btn-filled {
+            background: var(--sage);
+            color: var(--ivory);
+            border: none;
+        }
+
+        .doc-download-btn-filled:hover {
+            background: var(--sage-deep);
+            transform: scale(1.02);
+        }
+
+        .doc-download-btn-outline {
+            background: transparent;
+            color: var(--sage);
+            border: 2px solid var(--sage);
+        }
+
+        .doc-download-btn-outline:hover {
+            background: rgba(122, 158, 142, 0.08);
+            transform: scale(1.02);
+        }
+
+        .gather-combine {
+            text-align: center;
+        }
+
+        .combine-link {
+            background: transparent;
+            border: none;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sage);
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity var(--duration-fast);
+        }
+
+        .combine-link:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+
+        /* ═══════════════════════════════════════════
+           DOWNLOAD OVERLAY
+           ═══════════════════════════════════════════ */
+        .download-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--fog);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 400ms var(--ease-soft);
+        }
+
+        .download-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .download-modal {
+            text-align: center;
+            max-width: 400px;
+            padding: 32px;
+        }
+
+        .download-anim {
+            margin-bottom: 24px;
+        }
+
+        .anim-page-left {
+            transform-origin: 50% 80%;
+            animation: fan-left 2s infinite ease-in-out;
+        }
+
+        .anim-page-right {
+            transform-origin: 50% 80%;
+            animation: fan-right 2s infinite ease-in-out;
+        }
+
+        @keyframes fan-left {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(-15deg);
+            }
+        }
+
+        @keyframes fan-right {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(15deg);
+            }
+        }
+
+        .dl-title {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--forest);
+            margin-bottom: 8px;
+        }
+
+        .dl-sub {
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--mauve);
+            margin-bottom: 24px;
+        }
+
+        .dl-progress-bar {
+            height: 6px;
+            background: var(--ivory-deep);
+            border-radius: var(--radius-pill);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .dl-progress-fill {
+            height: 100%;
+            background: var(--sage);
+            width: 0%;
+            animation: progress-loop 3s infinite ease-in-out;
+        }
+
+        @keyframes progress-loop {
+            0% {
+                width: 0%;
+                transform: translateX(-10%);
+            }
+
+            50% {
+                width: 40%;
+                transform: translateX(50%);
+            }
+
+            100% {
+                width: 0%;
+                transform: translateX(250%);
+            }
+        }
+
+        .dl-note {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--mauve);
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        /* ═══════════════════════════════════════════
+           REDUCED MOTION
+           ═══════════════════════════════════════════ */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .quick-exit-btn,
+            .voice-wave .bar {
+                animation: none !important;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE — MOBILE
+           ═══════════════════════════════════════════ */
+        @media (max-width: 1024px) {
+            .doc-cards {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 767px) {
+            body {
+                overflow: auto;
+            }
+
+            .dashboard {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .sidebar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: auto;
+                max-height: 70vh;
+                border-right: none;
+                border-top: 1px solid rgba(164, 127, 138, 0.12);
+                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+                box-shadow: var(--shadow-card);
+                z-index: 500;
+                transform: translateY(100%);
+                transition: transform var(--duration-slow) var(--ease-gentle);
+            }
+
+            .sidebar.open {
+                transform: translateY(0);
+            }
+
+            .mobile-fab {
+                display: flex;
+            }
+
+            .main-panel {
+                height: auto;
+                overflow: visible;
+            }
+
+            .gather-panel {
+                position: relative;
+                left: 0;
+                top: 0;
+                bottom: auto;
+            }
+
+            .gather-content {
+                padding: 24px 16px 120px;
+            }
+
+            .timeline-container {
+                padding: 20px 16px 120px;
+            }
+
+            .memory-node.left,
+            .memory-node.right {
+                padding-left: 0;
+                padding-right: 0;
+                justify-content: center;
+            }
+
+            .stone-dot {
+                display: none;
+            }
+
+            .river-svg {
+                display: none;
+            }
+
+            .quick-exit-wrapper {
+                bottom: 24px;
+                right: 24px;
+            }
+
+            .quick-exit-btn {
+                width: 52px;
+                height: 52px;
+                gap: 0;
+            }
+
+            .quick-exit-btn .exit-label {
+                display: none;
+            }
+
+            .keyboard-hint {
+                display: none;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+   SLIDE PANEL (Added)
+   ═══════════════════════════════════════════ */
+
+        .slide-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: 900px;
+            background: var(--ivory);
+            box-shadow: var(--shadow-card);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            display: none;
+            /* animation: slideIn 320ms var(--ease-gentle) forwards; */
+            overflow-y: auto;
+            border-left: 1px solid rgba(164, 127, 138, 0.12);
+        }
+
+        @keyframes slideIn {
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        .panel-content {
+            padding: 112px 64px 80px;
+            /* Increased top padding to account for 64px global-nav */
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        /* ── Header ── */
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--mauve);
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 32px;
+            transition: color var(--duration-fast);
+        }
+
+        .nav-back:hover {
+            color: var(--forest);
+        }
+
+        .page-header h1 {
+            font-size: 22px;
+            color: var(--forest);
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            font-size: 14px;
+            color: var(--mauve);
+            line-height: 1.75;
+            max-width: 600px;
+        }
+
+        /* ── Method Cards ── */
+        .method-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .method-card {
+            background: var(--ivory-warm);
+            border-radius: var(--radius-xl);
+            border: 1px solid rgba(164, 127, 138, 0.12);
+            box-shadow: var(--shadow-whisper);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: border-color var(--duration-fast),
+                background var(--duration-fast),
+                transform var(--duration-fast);
+        }
+
+        .method-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .method-card.selected {
+            border: 2px solid var(--sage);
+            background: rgba(122, 158, 142, 0.04);
+        }
+
+        .selected-check {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: var(--sage);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity var(--duration-fast), transform var(--duration-fast);
+        }
+
+        .method-card.selected .selected-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .card-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--ivory-deep);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .card-icon-wrap.sage {
+            color: var(--sage);
+        }
+
+        .card-icon-wrap.mauve {
+            color: var(--mauve);
+        }
+
+        .card-icon-wrap.amber {
+            color: var(--amber-glow);
+        }
+
+        .method-card h2 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .method-card p {
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.65;
+            line-height: 1.75;
+            margin-bottom: 24px;
+            flex: 1;
+        }
+
+        .method-cta {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .cta-sage {
+            color: var(--sage);
+        }
+
+        .cta-mauve {
+            color: var(--mauve);
+        }
+
+        .cta-amber {
+            color: var(--amber-glow);
+        }
+
+        .lang-badge {
+            display: inline-block;
+            background: var(--ivory-deep);
+            border-radius: var(--radius-pill);
+            padding: 4px 10px;
+            font-size: 11px;
+            color: var(--forest);
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        .micro-note {
+            font-size: 12px !important;
+            color: var(--mauve) !important;
+            margin-top: 12px;
+            margin-bottom: 0 !important;
+            opacity: 1 !important;
+        }
+
+        /* ── Active Input Areas ── */
+        .input-areas {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .input-area {
+            display: none;
+            animation: fadeIn 300ms var(--ease-soft) forwards;
+        }
+
+        .input-area.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Text Input */
+        .text-input-wrap {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .text-toggle-bar {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .lang-toggle-btn {
+            background: var(--ivory-deep);
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 6px 12px;
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--forest);
+            cursor: pointer;
+        }
+
+        .memory-textarea {
+            width: 100%;
+            min-height: 200px;
+            background: var(--ivory);
+            border: 1.5px solid var(--ivory-deep);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            color: var(--forest);
+            line-height: 1.75;
+            resize: vertical;
+            transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+        }
+
+        .memory-textarea::placeholder {
+            color: var(--mauve);
+            opacity: 0.45;
+        }
+
+        .memory-textarea:focus {
+            border-color: var(--sage);
+            box-shadow: 0 0 0 4px rgba(122, 158, 142, 0.08);
+            outline: none;
+        }
+
+        .word-count {
+            position: absolute;
+            bottom: 16px;
+            right: 24px;
+            font-size: 12px;
+            color: var(--mauve);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Voice Input */
+        .voice-input-wrap {
+            background: var(--ivory-warm);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(164, 127, 138, 0.12);
+        }
+
+        .record-circle {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: var(--mauve);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--ivory);
+            transition: transform var(--duration-fast), background var(--duration-fast);
+            position: relative;
+            border: none;
+        }
+
+        .record-circle:hover {
+            transform: scale(1.05);
+        }
+
+        .record-circle.recording {
+            animation: pulseRecord 1.2s infinite ease-in-out;
+        }
+
+        @keyframes pulseRecord {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+                background: var(--mauve-light);
+            }
+        }
+
+        .voice-status {
+            margin-top: 24px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--forest);
+            text-align: center;
+        }
+
+        .voice-wave-large {
+            display: none;
+            gap: 4px;
+            align-items: center;
+            height: 40px;
+            margin-top: 20px;
+        }
+
+        .voice-wave-large.active {
+            display: flex;
+        }
+
+        .voice-wave-large .bar {
+            width: 4px;
+            background: var(--mauve-light);
+            border-radius: 2px;
+            animation: waveLive 1s infinite ease-in-out;
+        }
+
+        @keyframes waveLive {
+
+            0%,
+            100% {
+                height: 10px;
+            }
+
+            50% {
+                height: 35px;
+            }
+        }
+
+        .voice-actions {
+            display: none;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .voice-actions.active {
+            display: flex;
+            align-items: center;
+        }
+
+        .voice-action-btn {
+            background: transparent;
+            border: none;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--mauve);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .voice-note {
+            font-size: 12px;
+            color: var(--mauve);
+            opacity: 0.8;
+            margin-top: 32px;
+        }
+
+        /* Media Input */
+        .media-dropzone {
+            width: 100%;
+            height: 160px;
+            border: 2px dashed var(--ivory-deep);
+            background: var(--ivory-warm);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color var(--duration-fast), background var(--duration-fast);
+        }
+
+        .media-dropzone:hover {
+            border-color: var(--sage-light);
+            background: var(--ivory);
+        }
+
+        .media-dropzone.dragover {
+            border-color: var(--sage);
+            background: rgba(122, 158, 142, 0.05);
+        }
+
+        .media-dropzone svg {
+            color: var(--sage-light);
+            margin-bottom: 12px;
+        }
+
+        .media-dropzone h3 {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--forest);
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .media-dropzone p {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--mauve);
+        }
+
+        .media-files {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .media-file-card {
+            display: flex;
+            align-items: center;
+            background: var(--ivory-deep);
+            padding: 8px 16px 8px 8px;
+            border-radius: var(--radius-md);
+            gap: 12px;
+        }
+
+        .media-thumb-small {
+            width: 40px;
+            height: 40px;
+            background: var(--sage-light);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ivory);
+        }
+
+        .media-file-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .media-file-name {
+            font-size: 12px;
+            color: var(--forest);
+            font-weight: 600;
+        }
+
+        .media-file-size {
+            font-size: 11px;
+            color: var(--mauve);
+        }
+
+        .media-remove {
+            background: transparent;
+            border: none;
+            color: var(--mauve);
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 8px;
+        }
+
+        .exif-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(122, 158, 142, 0.15);
+            color: var(--sage-deep);
+            padding: 6px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            margin-top: 16px;
+            font-weight: 600;
+        }
+
+        /* ── Confidence Score Selector ── */
+        .confidence-section {
+            border-top: 1px solid var(--ivory-deep);
+            padding-top: 48px;
+        }
+
+        .confidence-section h3 {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--forest);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .confidence-note {
+            font-size: 13px;
+            color: var(--mauve);
+            line-height: 1.75;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto 32px;
+        }
+
+        .confidence-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .conf-btn-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .conf-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--ivory-deep);
+            color: var(--forest);
+            border: none;
+            font-family: var(--font-display);
+            font-size: 18px;
+            cursor: pointer;
+            transition: background var(--duration-fast), color var(--duration-fast), transform 200ms var(--ease-gentle);
+        }
+
+        .conf-btn:hover {
+            background: var(--mauve-light);
+        }
+
+        .conf-btn.selected {
+            background: var(--amber-glow);
+            color: var(--ivory);
+            transform: scale(1);
+        }
+
+        .conf-btn:not(.selected) {
+            transform: scale(0.9);
+        }
+
+        .conf-label {
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.8;
+            font-weight: 600;
+        }
+
+        /* ── Save Button ── */
+        .save-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .save-btn {
+            width: 100%;
+            height: 64px;
+            background: var(--sage);
+            border-radius: var(--radius-pill);
+            color: var(--ivory);
+            font-family: var(--font-body);
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background var(--duration-fast), transform var(--duration-fast);
+        }
+
+        .save-btn:hover {
+            background: var(--sage-deep);
+            transform: translateY(-2px);
+        }
+
+        .save-note {
+            font-size: 12px;
+            color: var(--mauve);
+            opacity: 0.6;
+            text-align: center;
+        }
+
+        .save-progress-wrap {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: -8px;
+        }
+
+        .save-progress-wrap.active {
+            display: flex;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: var(--mauve);
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 4px;
+            background: var(--ivory-deep);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--sage);
+            width: 0%;
+            transition: width 15s linear;
+        }
+
+
+        .slide-panel.open {
+            display: flex;
+            animation: slideIn 320ms var(--ease-gentle) forwards;
+        }
+
+        .slide-panel.closing {
+            animation: slideOut 320ms var(--ease-gentle) forwards;
+        }
+
+        @media (max-width: 900px) {
+            .slide-panel {
+                max-width: 100%;
+                border-left: none;
+            }
+        }
+    </style>
+</head>
+<header class="global-nav">
+    <!-- Logo/Wordmark -->
+    <a href="#" class="wordmark" aria-label="IntegrAlly Home">Integr<span>Ally</span></a>
+    <div class="spacer"></div>
+    <!-- Language Toggle Pill -->
+    <button class="lang-toggle" aria-label="Toggle language">
+        <span class="active">EN</span> | <span style="font-weight: 300; opacity: 0.8;">हिं</span>
+    </button>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
+    <!-- Help Button -->
+    <button class="help-btn" id="helpTrigger" aria-label="Open support and privacy resources">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+    </button>
+</header>
+
+<!-- Drawer Overlay & Content -->
+<div class="help-drawer-overlay" id="helpOverlay" aria-hidden="true"></div>
+<aside class="help-drawer" id="helpDrawer" role="dialog" aria-modal="true" aria-labelledby="helpTitle"
+    aria-hidden="true">
+    <div class="drawer-header">
+        <h2 id="helpTitle">Help & Resources</h2>
+        <button class="close-btn" id="closeHelp" aria-label="Close help resources">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+    <div class="drawer-content">
+        <h3>Privacy Promise</h3>
+        <p>We never see your name. We never see your face. This is yours.</p>
+        <h3>Data Storage</h3>
+        <p>Your memories sit locally on your device before safely backing up to your encrypted Safespace.</p>
+        <h3>Quick Exit Shortcut</h3>
+        <p>Press <kbd>Esc</kbd> <kbd>Esc</kbd> quickly, or tap the button in the bottom corner to immediately leave
+            safely. Your history will be replaced to protect your session.</p>
+    </div>
+</aside>
+
+<div class="dashboard">
+
+    <!-- ═══════════════════════════════════════════
+             SIDEBAR
+             ═══════════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar" role="complementary" aria-label="Safespace sidebar">
+
+        <!-- Greeting -->
+        <div class="sidebar-greeting">
+            <p class="sidebar-welcome">Welcome to your Safespace</p>
+            <h2 class="sidebar-name" id="sidebarName">Case-492-Blue-Fox</h2>
+            <hr class="sidebar-rule" aria-hidden="true">
+        </div>
+
+        <!-- Action buttons -->
+        <div class="sidebar-actions">
+            <button class="action-btn action-btn-primary" id="sidebarAddMemoryBtn"
+                aria-label="Add a Memory — text, voice, or media">
+                <span class="action-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" aria-hidden="true">
+                        <path d="M12 22 C12 14, 7 10, 4 5 Q8 9, 12 8 Q16 9, 20 5 C17 10, 12 14, 12 22Z" />
+                    </svg>
+                </span>
+                <span class="action-text">
+                    <span class="action-label">Add a Memory</span>
+                    <span class="action-sub">Text, voice, or media</span>
+                </span>
+                <span class="action-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 5l7 7-7 7" />
+                    </svg>
+                </span>
+            </button>
+
+            <button class="action-btn action-btn-secondary" id="gatherStoryBtn"
+                aria-label="Gather My Story — compile all memories into documents">
+                <span class="action-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="4" y="2" width="16" height="20" rx="2" />
+                        <line x1="8" y1="8" x2="16" y2="8" />
+                        <line x1="8" y1="12" x2="14" y2="12" />
+                        <line x1="8" y1="16" x2="12" y2="16" />
+                    </svg>
+                </span>
+                <span class="action-text">
+                    <span class="action-label">Gather My Story</span>
+                    <span class="action-sub">Compile all memories into documents</span>
+                </span>
+                <span class="action-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 5l7 7-7 7" />
+                    </svg>
+                </span>
+            </button>
+        </div>
+
+        <!-- Instructional note -->
+        <p class="sidebar-note">There is no rush. Add memories in any order, at any time. You can always come back.</p>
+
+        <!-- Stats -->
+        <div class="sidebar-stats">
+            <span class="stat-pill memory-count">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    aria-hidden="true">
+                    <path d="M12 22 C12 14, 7 10, 4 5 Q8 9, 12 8 Q16 9, 20 5 C17 10, 12 14, 12 22Z" />
+                </svg>
+                <span id="memoryCountText">3 memories</span>
+            </span>
+            <span class="stat-pill last-added">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+                Last added 2 days ago
+            </span>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════
+             MAIN PANEL — RIVER TIMELINE
+             ═══════════════════════════════════════════ -->
+    <main class="main-panel panel-fade" id="timelinePanel" role="main" aria-label="Memory timeline">
+
+        <!-- Panel header -->
+        <header class="panel-header">
+            <h1 class="panel-title">Your Memories</h1>
+            <button class="sort-toggle" id="sortToggle" aria-label="Toggle sort order">
+                Oldest first ↕
+            </button>
+        </header>
+
+        <!-- Timeline area -->
+        <div class="timeline-container" id="timelineContainer">
+
+            <!-- River SVG — sinuous decorative river path spanning full container -->
+            <svg class="river-svg" id="riverSvg" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid meet"
+                aria-hidden="true">
+                <defs>
+                    <filter id="riverGlow" x="-50%" y="-10%" width="200%" height="120%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
+                <!-- Glow halo pass -->
+                <path class="river-path-glow" id="riverPathGlow" d="M300 0 C300 100 300 200 300 800" />
+                <!-- Stepping-stone dashed main river -->
+                <path class="river-path" id="riverPath" d="M300 0 C300 100 300 200 300 800" />
+                <!-- Connector lines from cards to river (injected by JS) -->
+                <g id="riverConnectors"></g>
+                <!-- Terminal teardrop petal -->
+                <path class="river-terminal" id="riverTerminal" d="M300 790 Q296 800, 300 808 Q304 800, 300 790Z" />
+                <path class="river-terminal-outline" id="riverTerminalOutline"
+                    d="M300 790 Q296 800, 300 808 Q304 800, 300 790Z" />
+            </svg>
+
+            <!-- Timeline track with memory cards -->
+            <div class="timeline-track" id="timelineTrack">
+                <!-- Cards injected by JS -->
+            </div>
+        </div>
+
+        <!-- Empty state (hidden when memories exist) -->
+        <div class="empty-state" id="emptyState">
+            <svg width="160" height="160" viewBox="0 0 160 160" fill="none" aria-hidden="true">
+                <ellipse cx="80" cy="110" rx="60" ry="20" stroke="var(--sage-light)" stroke-width="1.5" fill="none"
+                    opacity="0.4" />
+                <path
+                    d="M80 30 Q60 60, 50 90 Q48 100, 55 105 Q65 112, 80 112 Q95 112, 105 105 Q112 100, 110 90 Q100 60, 80 30Z"
+                    stroke="var(--sage)" stroke-width="2" fill="none" stroke-linecap="round" />
+                <path d="M65 85 Q72 75, 80 78 Q88 75, 95 85" stroke="var(--sage-light)" stroke-width="1" fill="none"
+                    opacity="0.5" />
+                <line x1="80" y1="112" x2="80" y2="130" stroke="var(--sage-light)" stroke-width="1"
+                    stroke-dasharray="3 3" opacity="0.5" />
+            </svg>
+            <h3>Your Safespace is ready for your first memory</h3>
+            <p>When you're ready, add your first memory using the button on the left. Start with whatever feels easiest
+                — a date, a place, a single sentence. There is no wrong way.</p>
+            <button class="action-btn action-btn-primary" style="width:auto; padding:0 28px;"
+                aria-label="Add your first memory">
+                <span class="action-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        aria-hidden="true">
+                        <path d="M12 22 C12 14, 7 10, 4 5 Q8 9, 12 8 Q16 9, 20 5 C17 10, 12 14, 12 22Z" />
+                    </svg>
+                </span>
+                <span class="action-text">
+                    <span class="action-label">Add a Memory</span>
+                </span>
+                <span class="action-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 5l7 7-7 7" />
+                    </svg>
+                </span>
+            </button>
+        </div>
+
+    </main>
+    <!-- MAIN SLIDE-IN PANEL -->
+    <main class="slide-panel" id="slidePanel" role="main" aria-label="Add a Memory pane">
+        <div class="panel-content">
+
+            <!-- Header -->
+            <a href="#" class="nav-back" id="navBackTrigger" aria-label="Go back to dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                ← Back to Dashboard
+            </a>
+
+            <header class="page-header">
+                <h1>Add a Memory</h1>
+                <p>Share what you remember in whatever way feels most natural. You can use one method or all three.</p>
+            </header>
+
+            <!-- Method Selector Cards -->
+            <div class="method-cards" role="group" aria-label="Memory input methods">
+
+                <!-- Card A: Write -->
+                <button class="method-card" id="btn-method-text" aria-pressed="false">
+                    <svg class="selected-check" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div class="card-icon-wrap sage">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        </svg>
+                    </div>
+                    <h2>Write it down</h2>
+                    <p>Use your own words. Fragments are welcome. Write as much or as little as feels right.</p>
+                    <span class="method-cta cta-sage">Start writing →</span>
+                </button>
+
+                <!-- Card B: Voice -->
+                <button class="method-card" id="btn-method-voice" aria-pressed="false">
+                    <svg class="selected-check" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div class="card-icon-wrap mauve">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <rect x="9" y="2" width="6" height="11" rx="3" />
+                            <path d="M5 10a7 7 0 0 0 14 0" />
+                            <line x1="12" y1="19" x2="12" y2="22" />
+                        </svg>
+                    </div>
+                    <h2>Speak it out</h2>
+                    <p>Record your voice. Speak in English or Hindi — we'll help organise the words.</p>
+                    <span class="method-cta cta-mauve">Start recording →</span>
+                    <span class="lang-badge">EN | हिं supported</span>
+                </button>
+
+                <!-- Card C: Media -->
+                <button class="method-card" id="btn-method-media" aria-pressed="false">
+                    <svg class="selected-check" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div class="card-icon-wrap amber">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="9" cy="9" r="2" />
+                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                        </svg>
+                    </div>
+                    <h2>Upload evidence</h2>
+                    <p>Photos, videos, screenshots, documents. We preserve exactly what you share, along with the date
+                        it was recorded.</p>
+                    <span class="method-cta cta-amber">Choose files →</span>
+                    <p class="micro-note">EXIF data (photo location & date) will be preserved if available.</p>
+                </button>
+
+            </div>
+
+            <!-- Active Input Areas -->
+            <div class="input-areas">
+
+                <!-- Text Area -->
+                <div class="input-area" id="area-text">
+                    <div class="text-input-wrap">
+                        <div class="text-toggle-bar">
+                            <button id="memoryLangToggle" class="lang-toggle-btn"
+                                aria-label="Toggle input language between English and Hindi">
+                                EN | हिं
+                            </button>
+                        </div>
+                        <textarea class="memory-textarea" id="memoryText"
+                            placeholder="Begin wherever feels right. You can always add more later..."
+                            aria-label="Write your memory here"></textarea>
+                        <span class="word-count" id="wordCount">0 words</span>
+                    </div>
+                </div>
+
+                <!-- Voice Area -->
+                <div class="input-area" id="area-voice">
+                    <div class="voice-input-wrap">
+                        <button class="record-circle" id="recordBtn" aria-label="Start recording">
+                            <!-- Mic Icon default -->
+                            <svg class="icon-mic" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                                <rect x="9" y="2" width="6" height="11" rx="3" />
+                                <path d="M5 10a7 7 0 0 0 14 0" />
+                                <line x1="12" y1="19" x2="12" y2="22" />
+                            </svg>
+                            <!-- Stop Icon hidden -> shown on record -->
+                            <svg class="icon-stop" style="display:none;" width="32" height="32" viewBox="0 0 24 24"
+                                fill="currentColor" aria-hidden="true">
+                                <rect x="6" y="6" width="12" height="12" rx="2" />
+                            </svg>
+                            <!-- Play Icon hidden -> shown on recorded -->
+                            <svg class="icon-play" style="display:none;" width="32" height="32" viewBox="0 0 24 24"
+                                fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                        </button>
+
+                        <div class="voice-status" id="voiceStatus">Click to begin</div>
+
+                        <div class="voice-wave-large" id="voiceWave" aria-hidden="true">
+                            <div class="bar" style="animation-delay: 0.1s"></div>
+                            <div class="bar" style="animation-delay: 0.3s"></div>
+                            <div class="bar" style="animation-delay: 0.2s"></div>
+                            <div class="bar" style="animation-delay: 0.5s"></div>
+                            <div class="bar" style="animation-delay: 0.4s"></div>
+                            <div class="bar" style="animation-delay: 0.1s"></div>
+                            <div class="bar" style="animation-delay: 0.3s"></div>
+                            <div class="bar" style="animation-delay: 0.2s"></div>
+                            <div class="bar" style="animation-delay: 0.6s"></div>
+                            <div class="bar" style="animation-delay: 0.1s"></div>
+                            <div class="bar" style="animation-delay: 0.4s"></div>
+                            <div class="bar" style="animation-delay: 0.2s"></div>
+                        </div>
+
+                        <div class="voice-actions" id="voiceActions">
+                            <button class="voice-action-btn" id="voicePlayBtn">Play recording</button>
+                            <span style="color:var(--mauve); opacity:0.5;">|</span>
+                            <button class="voice-action-btn" id="voiceRerecordBtn">Discard & re-record</button>
+                        </div>
+
+                        <p class="voice-note">Recording is stored on this device first. It uploads automatically after a
+                            few seconds.</p>
+                    </div>
+                </div>
+
+                <!-- Media Area -->
+                <div class="input-area" id="area-media">
+                    <div class="media-dropzone" id="mediaDropzone" tabindex="0" role="button"
+                        aria-label="Drop files here or tap to choose">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <h3>Drop files here or tap to choose</h3>
+                        <p>Photos, videos, PDFs, and more. All formats welcomed.</p>
+                        <!-- hidden input -->
+                        <input type="file" id="mediaInput" multiple style="display:none">
+                    </div>
+
+                    <div class="media-files" id="mediaFilesList" aria-live="polite">
+                        <!-- Demor File Card -->
+                        <div class="media-file-card" style="display:none;" id="demoExifFile">
+                            <div class="media-thumb-small">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                    <circle cx="9" cy="9" r="2" />
+                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                </svg>
+                            </div>
+                            <div class="media-file-info">
+                                <span class="media-file-name">IMG_4922.jpg</span>
+                                <span class="media-file-size">2.4 MB</span>
+                            </div>
+                            <button class="media-remove" aria-label="Remove IMG_4922.jpg">×</button>
+                        </div>
+                    </div>
+
+                    <!-- EXIF notification -->
+                    <div class="exif-pill" id="exifPill" style="display:none;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Date taken: 14 Mar 2025 — Preserved for you
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Confidence Score -->
+            <div class="confidence-section">
+                <h3>How clearly do you remember this?</h3>
+                <p class="confidence-note">There is no wrong answer. Partial or unclear memories are just as important
+                    and valid. This rating is for your own reference.</p>
+
+                <div class="confidence-buttons" role="radiogroup" aria-label="Certainty rating">
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 1: Hazy"
+                            data-val="1">1</button>
+                        <span class="conf-label">Hazy</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 2: Partial"
+                            data-val="2">2</button>
+                        <span class="conf-label">Partial</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 3: Moderate"
+                            data-val="3">3</button>
+                        <span class="conf-label">Moderate</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 4: Clear"
+                            data-val="4">4</button>
+                        <span class="conf-label">Clear</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 5: Very clear"
+                            data-val="5">5</button>
+                        <span class="conf-label">Very clear</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Action -->
+            <div class="save-section">
+                <button class="save-btn" id="saveMemBtn">Save this memory to my Safespace</button>
+                <div class="save-progress-wrap" id="saveProgressWrap">
+                    <span class="progress-label" id="progressLabel">Saving...</span>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="progressBar"></div>
+                    </div>
+                </div>
+                <p class="save-note" id="saveNote">Your memory is saved to this device immediately and backed up to your
+                    secure Safespace within 15 seconds.</p>
+            </div>
+
+        </div>
+    </main>
+
+
+    <!-- ═══════════════════════════════════════════
+             MAIN PANEL — GATHER MY STORY
+             ═══════════════════════════════════════════ -->
+    <main class="main-panel gather-panel panel-fade fade-out" id="gatherPanel" role="main" aria-label="Gather My Story"
+        style="display: none;">
+        <div class="gather-content">
+            <!-- Page Intro -->
+            <div class="gather-intro">
+                <h1 class="gather-h1">Gathering your story</h1>
+                <p class="gather-p">When you're ready, we can bring all of your memories together into two documents.
+                    One is your complete, unaltered record. The other is an organised summary. Both are yours to keep,
+                    share, or hand to someone you trust.</p>
+
+                <div class="gather-note">
+                    <svg class="gather-note-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.5">
+                        <path d="M11 20A7 7 0 0 1 4 13V4h9a7 7 0 0 1 7 7v9h-9Z" />
+                    </svg>
+                    <p>This doesn't delete or change anything in your Safespace. All your memories remain here, safe and
+                        intact. You can gather your story as many times as you like.</p>
+                </div>
+            </div>
+
+            <!-- Two Document Cards -->
+            <div class="doc-cards">
+                <!-- Doc 1 -->
+                <div class="doc-card">
+                    <div class="doc-illus">
+                        <svg width="80" height="80" viewBox="0 0 100 100" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M20 80 L80 80 L80 20 L20 20 Z" stroke="var(--sage-light)"
+                                transform="rotate(-5 50 50)" />
+                            <path d="M20 80 L80 80 L80 20 L20 20 Z" stroke="var(--mauve-light)"
+                                transform="rotate(5 50 50)" />
+                            <path d="M20 80 L80 80 L80 20 L20 20 Z" stroke="var(--sage)" />
+                        </svg>
+                    </div>
+                    <span class="doc-badge">Full record</span>
+                    <h2 class="doc-title">Your Complete Memory Record</h2>
+                    <p class="doc-desc">Every memory you've added, in the order you added it. Nothing edited or
+                        reorganised — exactly as you experienced and shared it. This document is a raw, timestamped
+                        record and can be used as a primary legal reference.</p>
+
+                    <ul class="doc-list">
+                        <li>Each memory in full — text, voice transcription, or media reference</li>
+                        <li>The exact date and time you added each memory</li>
+                        <li>Your certainty rating for each entry</li>
+                        <li>Any notes on EXIF data from uploaded media</li>
+                        <li>Whether each entry was added by you or a Guardian</li>
+                    </ul>
+
+                    <div class="doc-formats">
+                        <button class="format-btn active">PDF</button>
+                        <button class="format-btn">Word Document (.docx)</button>
+                    </div>
+
+                    <button class="doc-download-btn doc-download-btn-filled" onclick="startGatherDownload()">Download
+                        Document 1</button>
+                </div>
+
+                <!-- Doc 2 -->
+                <div class="doc-card">
+                    <div class="doc-illus">
+                        <svg width="80" height="80" viewBox="0 0 100 100" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <circle cx="50" cy="50" r="30" stroke="var(--mauve-light)" />
+                            <path d="M50 10 L50 90 M10 50 L90 50" stroke="var(--mauve-light)" />
+                            <polygon points="50 20 60 50 50 80 40 50" stroke="var(--mauve)" />
+                        </svg>
+                    </div>
+                    <span class="doc-badge amber">AI-organised</span>
+                    <h2 class="doc-title">Your Organised Summary</h2>
+                    <p class="doc-desc">Your memories thoughtfully arranged in chronological order, with patterns and
+                        connections identified. Includes reference numbers linking back to Document 1. Designed to help
+                        lawyers, doctors, or support workers understand your experience at a glance.</p>
+
+                    <ul class="doc-list">
+                        <li>Events arranged by the timeline of what happened (not when you remembered it)</li>
+                        <li>Each event cross-referenced to Document 1</li>
+                        <li>Your certainty ratings clearly marked</li>
+                        <li>A brief summary of key events</li>
+                        <li>Optionally formatted as an FIR report or medical intake record (see below)</li>
+                    </ul>
+
+                    <div class="doc-formats">
+                        <button class="format-btn active">Standard Summary</button>
+                        <button class="format-btn">FIR Format</button>
+                        <button class="format-btn">Medical Intake</button>
+                    </div>
+                    <p class="doc-format-note">These templates help translate your record into formats recognised by
+                        police and hospitals. You can edit any document after downloading.</p>
+
+                    <button class="doc-download-btn doc-download-btn-outline" onclick="startGatherDownload()">Download
+                        Document 2</button>
+                </div>
+            </div>
+
+            <div class="gather-combine">
+                <button class="combine-link" onclick="startGatherDownload()">Download both documents together →</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Mobile FAB -->
+<button class="mobile-fab" id="mobileFab" aria-label="Open sidebar actions">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+        aria-hidden="true">
+        <path d="M12 22 C12 14, 7 10, 4 5 Q8 9, 12 8 Q16 9, 20 5 C17 10, 12 14, 12 22Z" />
+    </svg>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ═══════════════════════════════════════════
+         QUICK EXIT BUTTON
+         ═══════════════════════════════════════════ -->
+<div class="quick-exit-wrapper">
+    <span class="keyboard-hint" aria-hidden="true">⎋⎋</span>
+    <button class="quick-exit-btn" id="quickExitBtn" aria-label="Leave safely and securely">
+        <span class="quick-exit-tooltip" role="tooltip">Takes you away safely. Your progress is saved.</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12A10 10 0 0 0 11 2C8 2 5.5 3.5 3 6c0 0 1 8 6 12s12 3 12 3-1-4-3-9z" />
+            <path d="M21 21c-5-2-9-7-10-12" />
+        </svg>
+        <span class="exit-label">Leave Safely →</span>
+    </button>
+</div>
+
+<!-- ═══════════════════════════════════════════
+         DOWNLOAD OVERLAY
+         ═══════════════════════════════════════════ -->
+<div class="download-overlay" id="downloadOverlay" role="dialog" aria-modal="true" aria-labelledby="dlTitle">
+    <div class="download-modal">
+        <svg class="download-anim" width="80" height="80" viewBox="0 0 100 100" fill="none" stroke="currentColor"
+            stroke-width="1.5" aria-hidden="true">
+            <path class="anim-page-left" d="M30 80 L70 80 L70 20 L30 20 Z" stroke="var(--sage-light)" />
+            <path class="anim-page-right" d="M30 80 L70 80 L70 20 L30 20 Z" stroke="var(--mauve-light)" />
+            <path class="anim-page-center" d="M30 80 L70 80 L70 20 L30 20 Z" stroke="var(--sage)" />
+        </svg>
+        <h2 class="dl-title" id="dlTitle">Gathering your story...</h2>
+        <p class="dl-sub">This usually takes less than a minute.</p>
+        <div class="dl-progress-bar">
+            <div class="dl-progress-fill"></div>
+        </div>
+        <p class="dl-note">You can close this at any time and come back. The documents will be ready when you return.
+        </p>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+         JAVASCRIPT
+         ═══════════════════════════════════════════ -->
+<script>
+    // ── localStorage Guard & Redirect ──
+    const activeCase = localStorage.getItem('activeCase');
+    if (!activeCase) {
+        window.location.replace('index.html');
+    }
+
+    // ── Supabase JS Client initialization ──
+    const SUPABASE_URL = "https://jcikghzgduboseasubny.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_8CbBilkkiiJEHGRkvNcppg_WitEkWSf";
+    let supabaseClient = null;
+    if (SUPABASE_URL && SUPABASE_ANON_KEY &&
+        SUPABASE_URL.trim() !== "" &&
+        SUPABASE_ANON_KEY.trim() !== "") {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    // ── SHA-256 Helper ──
+    async function sha256Hex(text) {
+        const msgBuffer = new TextEncoder().encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
+    }
+
+    // ── Fetch Case Name ──
+    async function loadCaseMetadata() {
+        if (!supabaseClient || !activeCase) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from('safespaces')
+                .select('case_name')
+                .eq('id', activeCase)
+                .single();
+            if (error) throw error;
+            if (data && data.case_name) {
+                const sidebarNameEl = document.getElementById('sidebarName');
+                if (sidebarNameEl) {
+                    sidebarNameEl.textContent = data.case_name;
+                }
+            }
+        } catch (err) {
+            console.warn("Could not retrieve case metadata:", err);
+        }
+    }
+    loadCaseMetadata();
+
+    // ── Load memories from Supabase ──
+    async function loadMemories() {
+        if (!supabaseClient || !activeCase) return [];
+        try {
+            const { data, error } = await supabaseClient
+                .from('memories')
+                .select('*')
+                .eq('safespace_id', activeCase)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.warn(error);
+                return [];
+            }
+
+            return (data || []).map(row => ({
+                id: row.id,
+                type: row.type === 'text' ? 'written' : (row.type || 'written'),
+                date: new Date(row.created_at),
+                preview: row.content ? (row.content.length > 120 ? row.content.slice(0, 120) + '...' : row.content) : '',
+                full: row.content || '',
+                confidence: row.confidence || 3
+            }));
+        } catch (err) {
+            console.warn(err);
+            return [];
+        }
+    }
+
+    // ── Update Stats ──
+    function updateMemoryStats(memoriesList) {
+        const countText = document.getElementById('memoryCountText');
+        if (countText) {
+            countText.textContent = `${memoriesList.length} memory${memoriesList.length === 1 ? '' : 'ies'}`;
+        }
+
+        const lastAddedEl = document.querySelector('.stat-pill.last-added');
+        if (lastAddedEl && memoriesList.length > 0) {
+            const newest = [...memoriesList].sort((a, b) => b.date - a.date)[0];
+            const diffMs = Date.now() - newest.date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+
+            let timeAgo = 'Just now';
+            if (diffDays > 0) {
+                timeAgo = `Last added ${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+            } else if (diffHrs > 0) {
+                timeAgo = `Last added ${diffHrs} hour${diffHrs === 1 ? '' : 's'} ago`;
+            } else if (diffMins > 0) {
+                timeAgo = `Last added ${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+            } else {
+                timeAgo = `Last added just now`;
+            }
+
+            lastAddedEl.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+                ${timeAgo}
+            `;
+        } else if (lastAddedEl) {
+            lastAddedEl.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+                No memories yet
+            `;
+        }
+    }
+
+    // ── Quick Exit ──
+    const quickExitBtn = document.getElementById('quickExitBtn');
+    let lastEscape = 0;
+    let pressTimer;
+
+    function performSafeExit() {
+        window.history.replaceState(null, '', 'https://www.google.com');
+        window.location.replace('https://www.google.com');
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const now = Date.now();
+            if (now - lastEscape < 500) performSafeExit();
+            lastEscape = now;
+        }
+    });
+    quickExitBtn.addEventListener('click', (e) => { e.preventDefault(); performSafeExit(); });
+    quickExitBtn.addEventListener('touchstart', () => { pressTimer = setTimeout(performSafeExit, 500); });
+    quickExitBtn.addEventListener('touchend', () => clearTimeout(pressTimer));
+    quickExitBtn.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+
+    let memories = [];
+
+    let sortOldestFirst = true;
+
+    // ── Render Timeline ──
+    function formatDate(d) {
+        return d.toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric'
+        }) + ', ' + d.toLocaleTimeString('en-GB', {
+            hour: 'numeric', minute: '2-digit', hour12: true
+        });
+    }
+
+    function renderTimeline(memories) {
+        const track = document.getElementById('timelineTrack');
+        const empty = document.getElementById('emptyState');
+        const container = document.getElementById('timelineContainer');
+
+        if (memories.length === 0) {
+            container.style.display = 'none';
+            empty.classList.add('visible');
+            return;
+        }
+        container.style.display = '';
+        empty.classList.remove('visible');
+
+        const sorted = [...memories].sort((a, b) => {
+            return sortOldestFirst
+                ? a.date - b.date
+                : b.date - a.date;
+        });
+
+        track.innerHTML = '';
+
+        sorted.forEach((mem, i) => {
+            const side = i % 2 === 0 ? 'left' : 'right';
+            const node = document.createElement('div');
+            node.className = `memory-node ${side}`;
+            node.setAttribute('role', 'article');
+            node.setAttribute('aria-label', `Memory from ${formatDate(mem.date)}`);
+
+            // Stone dot on the river centre line
+            const dot = document.createElement('div');
+            dot.className = 'stone-dot';
+            dot.setAttribute('aria-hidden', 'true');
+
+            // Build card
+            const card = document.createElement('div');
+            card.className = 'memory-card';
+            card.dataset.id = mem.id;
+
+            // Type badge
+            const typeIconMap = {
+                written: { label: 'Written', cls: 'written', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>' },
+                voice: { label: 'Voice', cls: 'voice', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>' },
+                media: { label: 'Media', cls: 'media', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>' }
+            };
+            const tInfo = typeIconMap[mem.type] || typeIconMap.written;
+
+            let contentHTML = '';
+
+            // Voice waveform
+            if (mem.type === 'voice') {
+                contentHTML += `
+                        <div class="voice-wave" aria-label="Voice waveform visualization">
+                            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                        </div>`;
+            }
+            // Media thumbnail
+            if (mem.type === 'media') {
+                contentHTML += `
+                        <div class="media-thumb" aria-label="Media attachment thumbnail">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" aria-hidden="true">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <circle cx="9" cy="9" r="2"/>
+                                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                            </svg>
+                        </div>`;
+            }
+
+            // Confidence dots
+            let dotsHTML = '';
+            for (let d = 1; d <= 5; d++) {
+                dotsHTML += `<span class="conf-dot${d <= mem.confidence ? ' filled' : ''}" aria-hidden="true"></span>`;
+            }
+
+            card.innerHTML = `
+                    <div class="card-top">
+                        <span class="type-badge ${tInfo.cls}">${tInfo.icon} ${tInfo.label}</span>
+                        <span class="card-date">${formatDate(mem.date)}</span>
+                    </div>
+                    ${contentHTML}
+                    <p class="card-preview">${mem.preview}</p>
+                    <div class="confidence-row">
+                        <span class="confidence-label">Certainty</span>
+                        <div class="confidence-dots">
+                            ${dotsHTML}
+                            <span class="confidence-tooltip">You rated your certainty of this memory as ${mem.confidence} out of 5 when you added it.</span>
+                        </div>
+                    </div>
+                    <div class="card-bottom">
+                        <button class="card-menu-btn" aria-label="Memory actions" data-menu="${mem.id}">⋯</button>
+                        <div class="card-dropdown" id="dropdown-${mem.id}">
+                            <button data-action="read">Read in full</button>
+                            <button data-action="edit">Edit this memory</button>
+                            <button data-action="remove">Remove this memory</button>
+                        </div>
+                    </div>
+                `;
+
+            // Card click → expand
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.card-menu-btn') || e.target.closest('.card-dropdown')) return;
+                const preview = card.querySelector('.card-preview');
+                const isExpanded = card.classList.toggle('expanded');
+                if (isExpanded) {
+                    preview.textContent = mem.full;
+                } else {
+                    preview.textContent = mem.preview;
+                }
+            });
+
+            node.appendChild(dot);
+            node.appendChild(card);
+            track.appendChild(node);
+        });
+
+        // Rebuild SVG river path to match rendered track
+        requestAnimationFrame(() => buildRiverSvg(sorted.length));
+    }
+
+    /* ── River SVG Generation ── */
+    function buildRiverSvg(memCount) {
+        const container = document.getElementById('timelineContainer');
+        const track = document.getElementById('timelineTrack');
+        const svg = document.getElementById('riverSvg');
+
+        const cW = container.offsetWidth;   // full container pixel width
+        const cH = Math.max(container.offsetHeight, track.offsetHeight + 100);
+
+        // River spans ~65% of container width, centred
+        const riverW = cW * 0.65;
+        const cx = cW / 2;              // horizontal centre in pixels
+        const swing = riverW * 0.22;        // how far left/right each bend goes
+
+        // SVG coordinate space matches container pixels 1:1
+        svg.setAttribute('viewBox', `0 0 ${cW} ${cH}`);
+
+        const h = cH;
+        const endY = h - 20;               // river ends here; petal below
+
+        // ── Generate a winding path based on memory count ──
+        let d = '';
+        if (memCount <= 1) {
+            // Straight with gentle lean
+            d = `M${cx} 0 C${cx + swing * 0.3} ${h * 0.3}, ${cx - swing * 0.3} ${h * 0.6}, ${cx} ${endY}`;
+        } else if (memCount === 2) {
+            // Single S-bend
+            d = `M${cx} 0 C${cx - swing} ${h * 0.25}, ${cx + swing} ${h * 0.6}, ${cx} ${endY}`;
+        } else {
+            // Multi-loop winding river: one loop per 2 memories
+            const loops = Math.ceil(memCount / 2);
+            const segH = endY / (loops + 0.5);
+            let pts = [`M${cx} 0`];
+            for (let l = 0; l < loops; l++) {
+                const y1 = segH * (l + 0.5);
+                const y2 = segH * (l + 1);
+                const dir = l % 2 === 0 ? 1 : -1;  // alternates L/R
+                const cp1x = cx + dir * swing;
+                const cp2x = cx - dir * swing * 0.6;
+                pts.push(`C${cp1x} ${y1}, ${cp2x} ${y1 + segH * 0.3}, ${cx} ${y2}`);
+            }
+            // Final segment down to endY
+            const lastY = segH * loops;
+            if (lastY < endY) {
+                pts.push(`C${cx} ${lastY + (endY - lastY) * 0.4}, ${cx} ${lastY + (endY - lastY) * 0.7}, ${cx} ${endY}`);
+            }
+            d = pts.join(' ');
+        }
+
+        svg.querySelector('#riverPath').setAttribute('d', d);
+        svg.querySelector('#riverPathGlow').setAttribute('d', d);
+
+        // ── Terminal petal ──
+        const py = endY;
+        const petalH = 18;
+        svg.querySelector('#riverTerminal').setAttribute('d',
+            `M${cx} ${py} Q${cx - 5} ${py + petalH * 0.5}, ${cx} ${py + petalH} Q${cx + 5} ${py + petalH * 0.5}, ${cx} ${py}Z`
+        );
+        svg.querySelector('#riverTerminalOutline').setAttribute('d',
+            `M${cx} ${py} Q${cx - 5} ${py + petalH * 0.5}, ${cx} ${py + petalH} Q${cx + 5} ${py + petalH * 0.5}, ${cx} ${py}Z`
+        );
+
+        // ── Connector lines from each card edge to the river centre ──
+        const connG = svg.querySelector('#riverConnectors');
+        connG.innerHTML = '';
+
+        const nodes = track.querySelectorAll('.memory-node');
+        const containerRect = container.getBoundingClientRect();
+
+        nodes.forEach((node, i) => {
+            const card = node.querySelector('.memory-card');
+            if (!card) return;
+            const cardRect = node.getBoundingClientRect();
+            const cardY = cardRect.top - containerRect.top + 40; // vertically at ~card top + 40px
+
+            // Find the x position on the river at this y
+            const riverX = cx; // simplified: centre column
+
+            // Card edge x
+            const side = node.classList.contains('left') ? 'left' : 'right';
+            const cardEdgeX = side === 'left'
+                ? cardRect.right - containerRect.left
+                : cardRect.left - containerRect.left;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('class', 'river-connector');
+            line.setAttribute('x1', riverX);
+            line.setAttribute('y1', cardY);
+            line.setAttribute('x2', cardEdgeX);
+            line.setAttribute('y2', cardY);
+            connG.appendChild(line);
+        });
+    }
+
+    // Rebuild on resize
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => buildRiverSvg(memories.length), 120);
+    });
+
+    // Initial page load data fetching
+    async function initDashboard() {
+        await loadCaseMetadata();
+        memories = await loadMemories();
+        renderTimeline(memories);
+        updateMemoryStats(memories);
+    }
+    initDashboard();
+
+    // ── Sort Toggle ──
+    document.getElementById('sortToggle').addEventListener('click', () => {
+        sortOldestFirst = !sortOldestFirst;
+        document.getElementById('sortToggle').textContent = sortOldestFirst ? 'Oldest first ↕' : 'Newest first ↕';
+        renderTimeline(memories);
+    });
+
+    // ── Card Dropdown Menus ──
+    document.addEventListener('click', (e) => {
+        const menuBtn = e.target.closest('.card-menu-btn');
+        // Close all
+        document.querySelectorAll('.card-dropdown.open').forEach(d => d.classList.remove('open'));
+        if (menuBtn) {
+            e.stopPropagation();
+            const id = menuBtn.dataset.menu;
+            const dd = document.getElementById('dropdown-' + id);
+            dd.classList.toggle('open');
+        }
+    });
+
+    // ── Mobile Sidebar ──
+    const mobileFab = document.getElementById('mobileFab');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    mobileFab.addEventListener('click', () => {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+    });
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    });
+
+    // ── Navigation to Gather My Story ──
+    const gatherBtn = document.getElementById('gatherStoryBtn');
+    const timelinePanel = document.getElementById('timelinePanel');
+    const gatherPanel = document.getElementById('gatherPanel');
+
+    gatherBtn.addEventListener('click', () => {
+        // Close mobile sidebar if open
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+
+        // Soft cross-fade to gather panel (400ms)
+        timelinePanel.classList.add('fade-out');
+
+        setTimeout(() => {
+            timelinePanel.style.display = 'none';
+            gatherPanel.style.display = 'block';
+
+            // Allow reflow before removing fade-out for transition
+            requestAnimationFrame(() => {
+                gatherPanel.classList.remove('fade-out');
+            });
+        }, 400); // match transition ms
+    });
+
+    // ── Download Handling ──
+    const downloadOverlay = document.getElementById('downloadOverlay');
+
+    function startGatherDownload() {
+        downloadOverlay.classList.add('show');
+        // Mock download complete after 5 seconds to dismiss the overlay
+        setTimeout(() => {
+            downloadOverlay.classList.remove('show');
+        }, 5000);
+    }
+
+    // Format toggle logic
+    document.querySelectorAll('.doc-formats').forEach(group => {
+        const btns = group.querySelectorAll('.format-btn');
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                btns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+    });
+
+    // --- Help Drawer Logic ---
+    const helpOverlay = document.getElementById('helpOverlay');
+    const helpDrawer = document.getElementById('helpDrawer');
+    const helpTrigger = document.getElementById('helpTrigger');
+    const closeHelp = document.getElementById('closeHelp');
+
+    function openDrawer() {
+        helpOverlay.classList.add('open');
+        helpDrawer.classList.add('open');
+        helpOverlay.setAttribute('aria-hidden', 'false');
+        helpDrawer.setAttribute('aria-hidden', 'false');
+        closeHelp.focus(); // Accessibility: send focus inside modal
+    }
+
+    function closeDrawer() {
+        helpOverlay.classList.remove('open');
+        helpDrawer.classList.remove('open');
+        helpOverlay.setAttribute('aria-hidden', 'true');
+        helpDrawer.setAttribute('aria-hidden', 'true');
+        helpTrigger.focus(); // Accessibility: restore focus
+    }
+
+    helpTrigger.addEventListener('click', openDrawer);
+    closeHelp.addEventListener('click', closeDrawer);
+    helpOverlay.addEventListener('click', closeDrawer);
+
+    // Escape to close drawer
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && helpDrawer.classList.contains('open')) {
+            closeDrawer();
+            e.stopPropagation();
+        }
+    });
+    // Add Memory Logic
+    // Back Nav Animation
+    document.getElementById('navBackTrigger').addEventListener('click', (e) => {
+        e.preventDefault();
+        const panel = document.getElementById('slidePanel');
+        panel.classList.replace("open", "closing"); setTimeout(() => { panel.classList.remove("closing"); panel.style.display = "none"; }, 320);
+
+    });
+
+    // Method Toggles
+    const methods = ['text', 'voice', 'media'];
+    methods.forEach(m => {
+        document.getElementById('btn-method-' + m).addEventListener('click', function () {
+            const isActive = this.classList.contains('selected');
+            this.classList.toggle('selected', !isActive);
+            this.setAttribute('aria-pressed', !isActive);
+            const area = document.getElementById('area-' + m);
+            if (!isActive) {
+                area.classList.add('active');
+            } else {
+                area.classList.remove('active');
+            }
+        });
+    });
+
+    // Textarea Word Count
+    const txtArea = document.getElementById('memoryText');
+    const wordCountText = document.getElementById('wordCount');
+    const memoryLangToggle =
+        document.getElementById('memoryLangToggle');
+
+    memoryLangToggle.addEventListener('click', () => {
+
+        if (currentLanguage === 'en') {
+
+            currentLanguage = 'hi';
+            memoryLangToggle.textContent = 'हिं | EN';
+
+        } else {
+
+            currentLanguage = 'en';
+            memoryLangToggle.textContent = 'EN | हिं';
+        }
+    });
+    txtArea.addEventListener('input', () => {
+        const words = txtArea.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+        wordCountText.textContent = `${words} word${words === 1 ? '' : 's'}`;
+    });
+
+    // Voice Recording Simulation
+    const recordBtn = document.getElementById('recordBtn');
+    const voiceStatus = document.getElementById('voiceStatus');
+    const voiceWave = document.getElementById('voiceWave');
+    const voiceActions = document.getElementById('voiceActions');
+    const iconMic = recordBtn.querySelector('.icon-mic');
+    const iconStop = recordBtn.querySelector('.icon-stop');
+    const iconPlay = recordBtn.querySelector('.icon-play');
+    let recordState = 'idle'; // idle, recording, done
+    let recInterval;
+    let recSeconds = 0;
+
+    function updateTimer() {
+        const m = Math.floor(recSeconds / 60);
+        const s = recSeconds % 60;
+        voiceStatus.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    recordBtn.addEventListener('click', () => {
+        if (recordState === 'idle') {
+            recordState = 'recording';
+            recordBtn.classList.add('recording');
+            iconMic.style.display = 'none';
+            iconStop.style.display = 'block';
+            voiceWave.classList.add('active');
+            recSeconds = 0;
+            updateTimer();
+            recInterval = setInterval(() => { recSeconds++; updateTimer(); }, 1000);
+        } else if (recordState === 'recording') {
+            recordState = 'done';
+            recordBtn.classList.remove('recording');
+            clearInterval(recInterval);
+            iconStop.style.display = 'none';
+            iconPlay.style.display = 'block';
+            voiceWave.classList.remove('active');
+            voiceStatus.textContent = `Recording — ${voiceStatus.textContent}`;
+            voiceActions.classList.add('active');
+        } else if (recordState === 'done') {
+            // Play simulation
+            alert("Playing recording...");
+        }
+    });
+
+    document.getElementById('voiceRerecordBtn').addEventListener('click', () => {
+        recordState = 'idle';
+        iconPlay.style.display = 'none';
+        iconMic.style.display = 'block';
+        voiceStatus.textContent = "Click to begin";
+        voiceActions.classList.remove('active');
+        recSeconds = 0;
+    });
+
+    // Media Input Simulation
+    const dropzone = document.getElementById('mediaDropzone');
+    const fileInput = document.getElementById('mediaInput');
+    const demoFile = document.getElementById('demoExifFile');
+    const exifPill = document.getElementById('exifPill');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        demoFile.style.display = 'flex';
+        exifPill.style.display = 'inline-flex';
+    });
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            demoFile.style.display = 'flex';
+            exifPill.style.display = 'inline-flex';
+        }
+    });
+    demoFile.querySelector('.media-remove').addEventListener('click', () => {
+        demoFile.style.display = 'none';
+        exifPill.style.display = 'none';
+    });
+
+
+    // Confidence Selector
+    let selectedConfidence = 3;
+    let currentLanguage = 'en';
+    const confBtns = document.querySelectorAll('.conf-btn');
+    confBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+
+            confBtns.forEach(b => {
+                b.classList.remove('selected');
+                b.setAttribute('aria-checked', 'false');
+            });
+
+            btn.classList.add('selected');
+            btn.setAttribute('aria-checked', 'true');
+
+            selectedConfidence = parseInt(
+                btn.dataset.val,
+                10
+            );
+        });
+    });
+
+    // Save Button Simulation
+    const saveBtn = document.getElementById('saveMemBtn');
+    const saveWrap = document.getElementById('saveProgressWrap');
+    const saveBar = document.getElementById('progressBar');
+    const saveLbl = document.getElementById('progressLabel');
+    const saveNote = document.getElementById('saveNote');
+
+    saveBtn.addEventListener('click', async () => {
+        const content = document.getElementById('memoryText').value.trim();
+        if (!content) {
+            alert('Please write down what you remember before saving.');
+            return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = '0.7';
+        saveWrap.classList.add('active');
+        saveNote.style.display = 'none';
+
+        // Start animation (snappy 0.8s progress bar fill)
+        saveBar.style.transition = "width 0.8s linear";
+        saveBar.style.width = '100%';
+        saveLbl.textContent = 'Saving...';
+        saveLbl.style.color = '';
+
+        try {
+            const sha256_hash = await sha256Hex(content);
+
+            const { error } = await supabaseClient
+                .from('memories')
+                .insert([
+                    {
+                        safespace_id: activeCase,
+                        type: 'text',
+                        content: content,
+                        confidence: selectedConfidence,
+                        sha256_hash: sha256_hash,
+                        language: currentLanguage
+                    }
+                ]);
+
+            if (error) throw error;
+
+            saveLbl.textContent = 'Your memory has been kept safely.';
+            saveLbl.style.color = 'var(--sage)';
+
+            setTimeout(async () => {
+                // 1. Close Add Memory panel
+                const panel = document.getElementById('slidePanel');
+                panel.classList.replace("open", "closing");
+                setTimeout(() => {
+                    panel.classList.remove("closing");
+                    panel.style.display = "none";
+
+                    // Reset save elements status after animation completes
+                    saveBtn.disabled = false;
+                    saveBtn.style.opacity = '1';
+                    saveWrap.classList.remove('active');
+                    saveBar.style.width = '0%';
+                    saveBar.style.transition = 'none';
+                    saveLbl.textContent = 'Saving...';
+                    saveLbl.style.color = '';
+                    saveNote.style.display = '';
+                }, 320);
+
+                // 2. Clear textarea
+                txtArea.value = '';
+                wordCountText.textContent = '0 words';
+
+                // 3. Reset confidence selector to 3
+                selectedConfidence = 3;
+                confBtns.forEach(b => {
+                    const val = parseInt(b.dataset.val, 10);
+                    const isThree = val === 3;
+                    b.classList.toggle('selected', isThree);
+                    b.setAttribute('aria-checked', isThree ? 'true' : 'false');
+                });
+
+                // 4. Reload memories from Supabase & re-render & update count
+                memories = await loadMemories();
+                renderTimeline(memories);
+                updateMemoryStats(memories);
+            }, 800);
+
+        } catch (err) {
+            console.warn(err);
+            saveLbl.textContent = 'Please check your connection and try again.';
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBar.style.transition = 'none';
+            saveBar.style.width = '0%';
+        }
+    });
+
+    // -- Dashboard Slide Trigger --
+    const addMemoryBtns = document.querySelectorAll('#sidebarAddMemoryBtn, .empty-state .action-btn');
+    const slidePanelRef = document.getElementById('slidePanel');
+    addMemoryBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const wasClosing = slidePanelRef.classList.contains('closing');
+            slidePanelRef.style.display = 'flex';
+            if (!wasClosing) {
+                slidePanelRef.classList.add('open');
+            } else {
+                slidePanelRef.classList.remove('closing');
+                slidePanelRef.classList.add('open');
+            }
+        });
+    });
+</script>
+<!-- Custom Cursor -->
+<style>
+    @media (pointer: fine) {
+        .custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--sage);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+        }
+
+        .custom-cursor.hover {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(122, 158, 142, 0.2);
+        }
+
+        .cursor-trail {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 4px;
+            background: var(--sage);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            opacity: 0.5;
+            transition: opacity 200ms ease-out;
+        }
+    }
+</style>
+<script>
+    (function () {
+        if (window.matchMedia('(pointer: coarse)').matches) return;
+        const cursor = document.createElement('div');
+        cursor.className = 'custom-cursor';
+        document.body.appendChild(cursor);
+        let mouseX = 0, mouseY = 0, cursorX = 0, cursorY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX; mouseY = e.clientY;
+            const dot = document.createElement('div');
+            dot.className = 'cursor-trail';
+            dot.style.left = mouseX + 'px'; dot.style.top = mouseY + 'px';
+            document.body.appendChild(dot);
+            setTimeout(() => { dot.style.opacity = '0'; setTimeout(() => dot.remove(), 200); }, 50);
+        });
+        function animateCursor() {
+            cursorX += (mouseX - cursorX) * 0.15; cursorY += (mouseY - cursorY) * 0.15;
+            cursor.style.left = cursorX + 'px'; cursor.style.top = cursorY + 'px';
+            requestAnimationFrame(animateCursor);
+        }
+        requestAnimationFrame(animateCursor);
+        document.body.addEventListener('mouseover', (e) => {
+            if (e.target.closest('button, a, input, [role="button"], .method-card, .conf-btn')) cursor.classList.add('hover');
+        });
+        document.body.addEventListener('mouseout', (e) => {
+            if (e.target.closest('button, a, input, [role="button"], .method-card, .conf-btn')) cursor.classList.remove('hover');
+        });
+    })();
+</script>
+</body>
+
+</html>

@@ -1,0 +1,2703 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="IntegrAlly — A trauma-informed tool to help you preserve and organise your memories safely and privately.">
+    <title>IntegrAlly — Your Sanctuary</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Nunito:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script src="theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- <script src="FogCanvas.js" defer></script> -->
+
+    <style>
+        /* ═══════════════════════════════════════════
+           DESIGN TOKENS
+           ═══════════════════════════════════════════ */
+        :root {
+            /* Colors — Light Mode */
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --amber-glow: #D4884A;
+            --fog: rgba(247, 244, 238, 0.92);
+
+            /* Typography */
+            --font-display: 'Lora', Georgia, serif;
+            --font-body: 'Nunito', system-ui, sans-serif;
+
+            /* Font Sizes */
+            --text-display: clamp(2.5rem, 5vw, 3.75rem);
+            --text-h1: clamp(1.5rem, 3vw, 2.25rem);
+            --text-h2: 1.375rem;
+            --text-body: 1rem;
+            --text-small: 0.875rem;
+            --text-micro: 0.75rem;
+
+            /* Radii */
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 40px;
+            --radius-pill: 100px;
+
+            /* Shadows */
+            --shadow-whisper: 0 2px 12px rgba(45, 74, 62, 0.06);
+            --shadow-soft: 0 4px 24px rgba(45, 74, 62, 0.10);
+            --shadow-card: 0 8px 40px rgba(45, 74, 62, 0.12);
+
+            /* Motion */
+            --ease-gentle: cubic-bezier(0.34, 1.02, 0.64, 1);
+            --ease-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --duration-fast: 180ms;
+            --duration-mid: 320ms;
+            --duration-slow: 600ms;
+            --duration-breathe: 4000ms;
+        }
+
+        /* Dark Mode — Preference Sync */
+        @media (prefers-color-scheme: dark) {
+            :root:not(.light-mode) {
+                --ivory: #1A1F1C;
+                --ivory-warm: #222B26;
+                --ivory-deep: #2D3830;
+                --sage: #6B9E8A;
+                --sage-light: #4E7564;
+                --sage-deep: #8BBDAA;
+                --forest: #E8EDE9;
+                --mauve: #C4A0AC;
+                --mauve-light: #6B4E57;
+                --amber-glow: #D4884A;
+                --fog: rgba(26, 31, 28, 0.92);
+            }
+        }
+
+        /* ── THEME OVERRIDES ── */
+        .dark-mode {
+            --ivory: #1A1F1C;
+            --ivory-warm: #222B26;
+            --ivory-deep: #2D3830;
+            --sage: #6B9E8A;
+            --sage-light: #4E7564;
+            --sage-deep: #8BBDAA;
+            --forest: #E8EDE9;
+            --mauve: #C4A0AC;
+            --mauve-light: #6B4E57;
+            --amber-glow: #D4884A;
+            --fog: rgba(26, 31, 28, 0.92);
+        }
+
+        /* Manual Light Mode Override (Overrides system preference) */
+        .light-mode {
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --amber-glow: #D4884A;
+            --fog: rgba(247, 244, 238, 0.92);
+        }
+
+        /* ═══════════════════════════════════════════
+           RESETS & BASE
+           ═══════════════════════════════════════════ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--ivory);
+            color: var(--forest);
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+            /* No scroll on desktop */
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--font-display);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        *:focus-visible {
+            outline: 3px solid var(--sage);
+            outline-offset: 3px;
+        }
+
+        /* ═══════════════════════════════════════════
+           BOTANICAL SVG BACKGROUND
+           ═══════════════════════════════════════════ */
+        .botanical-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            pointer-events: none;
+            animation: bg-breathe 12s ease-in-out infinite;
+        }
+
+        @keyframes bg-breathe {
+
+            0%,
+            100% {
+                transform: scale(1.0);
+            }
+
+            50% {
+                transform: scale(1.04);
+            }
+        }
+
+        .botanical-bg .stone {
+            animation: slow-rotate-cw 900s linear infinite;
+            transform-origin: center;
+        }
+
+        .botanical-bg .grass {
+            animation: slow-rotate-ccw 1200s linear infinite;
+            transform-origin: center;
+        }
+
+        .botanical-bg .vein {
+            animation: slow-rotate-cw 1800s linear infinite;
+            transform-origin: center;
+        }
+
+        @keyframes slow-rotate-cw {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes slow-rotate-ccw {
+            to {
+                transform: rotate(-360deg);
+            }
+        }
+
+        /* Noise Texture Overlay */
+        .noise-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.03;
+        }
+
+        /* --- Global Nav Header --- */
+        .global-nav {
+            height: 64px;
+            background: var(--fog);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(164, 127, 138, 0.12);
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 32px;
+            z-index: 100;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .wordmark-nav {
+            font-size: 22px;
+            color: var(--forest);
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .wordmark-nav span {
+            color: var(--sage);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .lang-toggle {
+            background: var(--ivory-deep);
+            color: var(--forest);
+            border-radius: var(--radius-pill);
+            height: 32px;
+            padding: 0 12px;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: 16px;
+            transition: transform var(--duration-fast);
+        }
+
+        .lang-toggle:hover {
+            transform: scale(1.02);
+        }
+
+        .lang-toggle .active {
+            color: var(--sage);
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 12px;
+            transition: all var(--duration-fast);
+        }
+
+        .theme-toggle:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        .help-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+
+        .help-btn:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        /* --- Help Drawer --- */
+        .help-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 31, 28, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid);
+            z-index: 1200;
+            backdrop-filter: blur(4px);
+        }
+
+        .help-drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .help-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 320px;
+            height: 100vh;
+            background: var(--ivory-warm);
+            box-shadow: var(--shadow-card);
+            transition: transform var(--duration-mid);
+            z-index: 1201;
+            padding: 32px;
+            border-left: 1px solid rgba(164, 127, 138, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .help-drawer.open {
+            transform: translateX(-320px);
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .drawer-header h2 {
+            font-size: 20px;
+            font-family: var(--font-display);
+            color: var(--forest);
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--mauve);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--duration-fast);
+        }
+
+        .close-btn:hover {
+            background: var(--ivory-deep);
+        }
+
+        .drawer-content h3 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--sage);
+            margin-top: 24px;
+            margin-bottom: 8px;
+        }
+
+        .drawer-content p {
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.85;
+        }
+
+        @media (max-width: 480px) {
+            .global-nav {
+                padding: 0 16px;
+            }
+
+            .help-drawer {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           PAGE LAYOUT — 3 ZONES (15vh / 55vh / 10vh)
+           ═══════════════════════════════════════════ */
+        .homepage {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            /* creates stacking context */
+            z-index: 2;
+            /* floats above fog canvas (z:1) */
+        }
+
+        /* --- ZONE A: Brand Header --- */
+        .zone-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            text-align: center;
+            padding: 24px 24px 8px;
+            flex-shrink: 0;
+        }
+
+        .wordmark {
+            font-family: var(--font-display);
+            font-size: var(--text-display);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            color: var(--forest);
+            animation: breathe var(--duration-breathe) ease-in-out infinite;
+        }
+
+        .wordmark .ally {
+            color: var(--sage);
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.015);
+            }
+        }
+
+        .tagline {
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 300;
+            color: var(--mauve);
+            margin-top: 8px;
+            max-width: 480px;
+        }
+
+        .brand-rule {
+            width: 80px;
+            height: 1px;
+            background: var(--mauve-light);
+            border: none;
+            margin-top: 16px;
+        }
+
+        /* --- ZONE B: Two Safespace Cards --- */
+        .zone-cards {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 12px 32px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* Shared card styles */
+        .card {
+            background: var(--ivory-warm);
+            border-radius: var(--radius-xl);
+            padding: 28px 32px;
+            box-shadow: var(--shadow-card);
+            width: 45vw;
+            max-width: 520px;
+            min-width: 300px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-1 {
+            border: 1px solid rgba(122, 158, 142, 0.25);
+        }
+
+        .card-2 {
+            border: 1px solid rgba(164, 127, 138, 0.25);
+        }
+
+        /* Atmospheric background SVGs inside cards */
+        .card-bg-svg {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.25;
+        }
+
+        .card-1 .card-bg-svg {
+            top: 12px;
+            right: 12px;
+            width: 120px;
+            height: 120px;
+        }
+
+        .card-2 .card-bg-svg {
+            top: 12px;
+            left: 12px;
+            width: 100px;
+            height: 100px;
+        }
+
+        /* Icon circle at top of card */
+        .icon-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--ivory-deep);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+
+        .card h2 {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--forest);
+            margin-bottom: 8px;
+        }
+
+        .card .body-copy {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--forest);
+            opacity: 0.65;
+            line-height: 1.75;
+            margin-bottom: 16px;
+        }
+
+        .card-divider {
+            width: 100%;
+            height: 1px;
+            background: var(--ivory-deep);
+            border: none;
+            margin: 8px 0 16px;
+        }
+
+        /* SafeCard badge */
+        .badge-amber {
+            display: inline-block;
+            background: rgba(212, 136, 74, 0.15);
+            color: var(--amber-glow);
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            margin-bottom: 8px;
+        }
+
+        .safecard-text {
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.60;
+            line-height: 1.75;
+            margin-bottom: 20px;
+        }
+
+        /* Primary CTA Button */
+        .btn-primary {
+            width: 100%;
+            height: 56px;
+            border: none;
+            border-radius: var(--radius-pill);
+            background: var(--sage);
+            color: var(--ivory);
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            transition: background var(--duration-fast) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft),
+                box-shadow var(--duration-fast) var(--ease-soft);
+        }
+
+        .btn-primary:hover {
+            background: var(--sage-deep);
+            transform: scale(1.01);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            transition-duration: 80ms;
+        }
+
+        .btn-primary .icon-left {
+            position: absolute;
+            left: 20px;
+        }
+
+        .btn-primary .icon-right {
+            position: absolute;
+            right: 20px;
+        }
+
+        /* Secondary CTA Button */
+        .btn-secondary {
+            width: 100%;
+            height: 56px;
+            border: 1.5px solid var(--sage);
+            border-radius: var(--radius-pill);
+            background: transparent;
+            color: var(--sage);
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--duration-fast) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(122, 158, 142, 0.08);
+            transform: scale(1.01);
+        }
+
+        .btn-note {
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 300;
+            color: var(--mauve);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* Form fields */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--forest);
+            margin-bottom: 2px;
+        }
+
+        .form-group .microtext {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--mauve);
+            margin-bottom: 6px;
+        }
+
+        .form-group .input-wrapper {
+            position: relative;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 48px;
+            background: var(--ivory);
+            border: 1.5px solid var(--ivory-deep);
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 15px;
+            color: var(--forest);
+            padding: 0 16px;
+            transition: border-color var(--duration-fast) var(--ease-soft),
+                box-shadow var(--duration-fast) var(--ease-soft);
+        }
+
+        .form-group input::placeholder {
+            color: var(--mauve);
+            opacity: 0.4;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--sage);
+            box-shadow: 0 0 0 3px rgba(122, 158, 142, 0.12);
+        }
+
+        .form-group input[type="password"] {
+            padding-right: 48px;
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--mauve);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 50%;
+            transition: color var(--duration-fast);
+        }
+
+        .toggle-visibility:hover {
+            color: var(--sage);
+        }
+
+        /* --- ZONE C: Footer Strip --- */
+        .zone-footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8px 24px 72px;
+            flex-shrink: 0;
+        }
+
+        .footer-rule {
+            width: 60px;
+            height: 1px;
+            background: var(--mauve-light);
+            border: none;
+            margin-bottom: 12px;
+        }
+
+        .footer-text {
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 300;
+            color: var(--mauve);
+            opacity: 0.60;
+        }
+
+        /* ═══════════════════════════════════════════
+           QUICK EXIT BUTTON
+           ═══════════════════════════════════════════ */
+        .quick-exit-wrapper {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 900;
+        }
+
+        .keyboard-hint {
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 300;
+            color: var(--mauve);
+        }
+
+        .quick-exit-btn {
+            width: 140px;
+            height: 44px;
+            border-radius: var(--radius-pill);
+            background: var(--sage);
+            color: var(--ivory);
+            border: none;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            position: relative;
+            animation: heartbeat-pulse 3s infinite var(--ease-gentle);
+            transition: background var(--duration-fast) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft);
+        }
+
+        .quick-exit-btn:hover {
+            background: var(--sage-deep);
+            transform: scale(1.02);
+            animation: none;
+        }
+
+        .quick-exit-tooltip {
+            position: absolute;
+            top: -42px;
+            background: var(--fog);
+            color: var(--forest);
+            font-family: var(--font-body);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-soft);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid) var(--ease-gentle) 200ms;
+            border: 1px solid rgba(164, 127, 138, 0.15);
+        }
+
+        .quick-exit-btn:hover .quick-exit-tooltip {
+            opacity: 1;
+        }
+
+        @keyframes heartbeat-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(122, 158, 142, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(122, 158, 142, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(122, 158, 142, 0);
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           MODAL — OVERLAY
+           ═══════════════════════════════════════════ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--fog);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid) var(--ease-gentle);
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Modal Shell */
+        .modal {
+            background: var(--ivory-warm);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-card);
+            width: 560px;
+            max-width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform var(--duration-slow) var(--ease-gentle),
+                opacity var(--duration-slow) var(--ease-gentle);
+            border: 1px solid rgba(164, 127, 138, 0.15);
+        }
+
+        .modal-overlay.open .modal {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Dismiss button */
+        .modal-dismiss {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--mauve);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--duration-fast);
+            z-index: 10;
+        }
+
+        .modal-dismiss:hover {
+            background: var(--ivory-deep);
+        }
+
+        /* Dismiss confirmation */
+        .dismiss-confirm {
+            display: none;
+            margin: 0 32px;
+            padding: 12px 16px;
+            background: rgba(164, 127, 138, 0.08);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(164, 127, 138, 0.20);
+            font-size: 13px;
+            color: var(--mauve);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .dismiss-confirm.show {
+            display: block;
+        }
+
+        .dismiss-confirm button {
+            margin-top: 10px;
+            margin-right: 8px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            border: 1.5px solid var(--sage);
+            background: transparent;
+            color: var(--sage);
+            cursor: pointer;
+        }
+
+        .dismiss-confirm button.confirm-leave {
+            background: var(--sage);
+            color: var(--ivory);
+            border-color: var(--sage);
+        }
+
+        /* Step dots indicator */
+        .step-dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 28px 32px 0;
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--ivory-deep);
+            transition: width var(--duration-mid) var(--ease-gentle),
+                height var(--duration-mid) var(--ease-gentle),
+                background var(--duration-mid) var(--ease-gentle);
+            flex-shrink: 0;
+        }
+
+        .step-dot.active {
+            width: 10px;
+            height: 10px;
+            background: var(--sage);
+        }
+
+        .step-connector {
+            height: 1px;
+            width: 40px;
+            background: var(--ivory-deep);
+        }
+
+        /* Modal body */
+        .modal-body {
+            padding: 24px 40px 36px;
+        }
+
+        /* Step panels */
+        .step-panel {
+            display: none;
+        }
+
+        .step-panel.active {
+            display: block;
+        }
+
+        /* Step icon (centered) */
+        .step-icon {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-heading {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--forest);
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+        }
+
+        .modal-heading.large {
+            font-size: 26px;
+        }
+
+        .modal-body-text {
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.65;
+            line-height: 1.75;
+            margin-bottom: 20px;
+        }
+
+        /* Name display / edit field */
+        .name-display-wrap {
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .name-display {
+            background: var(--ivory);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            width: 100%;
+            cursor: pointer;
+            border: 1.5px solid var(--ivory-deep);
+            transition: border-color var(--duration-fast);
+        }
+
+        .name-display:hover {
+            border-color: var(--sage-light);
+        }
+
+        .name-display-text {
+            font-family: var(--font-display);
+            font-size: 20px;
+            color: var(--sage-deep);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .name-display-hint {
+            font-size: 12px;
+            color: var(--mauve);
+        }
+
+        .name-input {
+            display: none;
+            width: 100%;
+            background: var(--ivory);
+            border: 1.5px solid var(--sage);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            font-family: var(--font-display);
+            font-size: 20px;
+            color: var(--sage-deep);
+            box-shadow: 0 0 0 3px rgba(122, 158, 142, 0.12);
+        }
+
+        .name-input:focus {
+            outline: none;
+        }
+
+        .name-refresh {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--sage);
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 50%;
+            transition: transform var(--duration-mid) var(--ease-gentle);
+        }
+
+        .name-refresh:hover {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        /* Modal next/action buttons */
+        .modal-btn {
+            width: 100%;
+            height: 56px;
+            border: none;
+            border-radius: var(--radius-pill);
+            background: var(--sage);
+            color: var(--ivory);
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background var(--duration-fast) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft),
+                box-shadow var(--duration-fast) var(--ease-soft),
+                opacity var(--duration-fast);
+        }
+
+        .modal-btn:hover:not(:disabled) {
+            background: var(--sage-deep);
+            transform: scale(1.01);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .modal-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .modal-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .modal-btn.large {
+            height: 64px;
+            font-size: 17px;
+        }
+
+        /* PIN/Passphrase toggle tabs */
+        .key-mode-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .key-tab {
+            padding: 7px 18px;
+            border: none;
+            border-radius: var(--radius-pill);
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--ivory-deep);
+            color: var(--forest);
+            transition: background var(--duration-fast), color var(--duration-fast);
+        }
+
+        .key-tab.active {
+            background: var(--sage);
+            color: var(--ivory);
+        }
+
+        /* PIN OTP boxes */
+        .pin-boxes {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .pin-box {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            border: 1.5px solid var(--ivory-deep);
+            background: var(--ivory);
+            font-family: var(--font-body);
+            font-size: 22px;
+            text-align: center;
+            color: var(--forest);
+            transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+        }
+
+        .pin-box:focus {
+            outline: none;
+            border-color: var(--sage);
+            box-shadow: 0 0 0 3px rgba(122, 158, 142, 0.12);
+        }
+
+        /* Passphrase */
+        .passphrase-wrap {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .passphrase-input {
+            width: 100%;
+            min-height: 96px;
+            max-height: 200px;
+            resize: vertical;
+            background: var(--ivory);
+            border: 1.5px solid var(--ivory-deep);
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 15px;
+            color: var(--forest);
+            padding: 14px 44px 14px 16px;
+            line-height: 1.6;
+            transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+        }
+
+        .passphrase-input:focus {
+            outline: none;
+            border-color: var(--sage);
+            box-shadow: 0 0 0 3px rgba(122, 158, 142, 0.12);
+        }
+
+        .passphrase-input::placeholder {
+            color: var(--mauve);
+            opacity: 0.45;
+        }
+
+        .passphrase-toggle {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--mauve);
+            transition: color var(--duration-fast);
+        }
+
+        .passphrase-toggle:hover {
+            color: var(--sage);
+        }
+
+        /* Strength bar */
+        .strength-bar-wrap {
+            margin-bottom: 16px;
+        }
+
+        .strength-bar-track {
+            height: 4px;
+            background: var(--ivory-deep);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .strength-bar-fill {
+            height: 100%;
+            width: 0;
+            border-radius: 2px;
+            transition: width var(--duration-mid) var(--ease-soft),
+                background var(--duration-mid);
+        }
+
+        .strength-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        /* Confirmation field check */
+        .confirm-wrap {
+            position: relative;
+        }
+
+        .confirm-check {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity var(--duration-mid);
+            color: var(--sage);
+        }
+
+        .confirm-check.show {
+            opacity: 1;
+        }
+
+        .field-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--forest);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .field-micro {
+            font-size: 12px;
+            color: var(--mauve);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .field-input {
+            width: 100%;
+            height: 48px;
+            background: var(--ivory);
+            border: 1.5px solid var(--ivory-deep);
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 15px;
+            color: var(--forest);
+            padding: 0 44px 0 16px;
+            transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+        }
+
+        .field-input:focus {
+            outline: none;
+            border-color: var(--sage);
+            box-shadow: 0 0 0 3px rgba(122, 158, 142, 0.12);
+        }
+
+        .field-input::placeholder {
+            color: var(--mauve);
+            opacity: 0.4;
+        }
+
+        /* Step 3 — Sanctuary illustration */
+        .sanctuary-illustration {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .sanctuary-illustration svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        @keyframes leaf-drift {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: translateY(-60px) rotate(15deg);
+                opacity: 0;
+            }
+        }
+
+        .drifting-leaf {
+            animation: leaf-drift 3s ease-in-out infinite;
+        }
+
+        .drifting-leaf:nth-child(2) {
+            animation-delay: 1s;
+        }
+
+        .drifting-leaf:nth-child(3) {
+            animation-delay: 2s;
+        }
+
+        /* Step 3 — Details card */
+        .details-card {
+            background: var(--ivory);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(164, 127, 138, 0.15);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .details-label {
+            font-size: 13px;
+            color: var(--mauve);
+            margin-bottom: 2px;
+        }
+
+        .details-value {
+            font-family: var(--font-display);
+            font-size: 20px;
+            color: var(--forest);
+            margin-bottom: 12px;
+        }
+
+        .details-value.masked {
+            font-family: var(--font-body);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .details-divider {
+            height: 1px;
+            background: var(--ivory-deep);
+            margin: 12px 0;
+        }
+
+        .eye-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--mauve);
+            display: flex;
+            align-items: center;
+            transition: color var(--duration-fast);
+        }
+
+        .eye-toggle:hover {
+            color: var(--sage);
+        }
+
+        /* Step 3 — SafeCard box */
+        .safecard-box {
+            background: rgba(122, 158, 142, 0.08);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(122, 158, 142, 0.20);
+            padding: 16px;
+            margin-bottom: 8px;
+        }
+
+        .safecard-box .badge-amber {
+            margin-bottom: 10px;
+        }
+
+        .safecard-box p {
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.80;
+            line-height: 1.75;
+            margin-bottom: 12px;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-pill);
+            background: var(--ivory-deep);
+            color: var(--forest);
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background var(--duration-fast), transform var(--duration-fast);
+        }
+
+        .btn-download:hover {
+            background: var(--mauve-light);
+            transform: scale(1.01);
+        }
+
+        /* Arrow slide animation on enter button */
+        @keyframes arrow-slide {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(4px);
+            }
+        }
+
+        .enter-btn-arrow {
+            display: inline-block;
+        }
+
+        .modal-btn.large:hover .enter-btn-arrow {
+            animation: arrow-slide 0.8s ease-in-out infinite;
+        }
+
+        /* ═══════════════════════════════════════════
+           REDUCED MOTION
+           ═══════════════════════════════════════════ */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .wordmark,
+            .quick-exit-btn,
+            .botanical-bg,
+            .botanical-bg .stone,
+            .botanical-bg .grass,
+            .botanical-bg .vein,
+            .drifting-leaf {
+                animation: none !important;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE — MOBILE
+           ═══════════════════════════════════════════ */
+        @media (max-width: 767px) {
+            body {
+                overflow: auto;
+                /* Mobile scrolls naturally */
+            }
+
+            .homepage {
+                min-height: auto;
+            }
+
+            .zone-brand {
+                height: auto;
+                padding: 32px 24px 16px;
+            }
+
+            .wordmark {
+                font-size: clamp(1.75rem, 6vw, 2.5rem);
+            }
+
+            .zone-cards {
+                height: auto;
+                flex-direction: column;
+                padding: 16px;
+                gap: 20px;
+            }
+
+            .card {
+                width: calc(100% - 32px);
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .zone-footer {
+                height: auto;
+                padding: 24px;
+            }
+
+            /* Quick Exit — circular on mobile */
+            .quick-exit-wrapper {
+                bottom: 24px;
+                right: 24px;
+            }
+
+            .quick-exit-btn {
+                width: 52px;
+                height: 52px;
+                gap: 0;
+            }
+
+            .quick-exit-btn .exit-label {
+                display: none;
+            }
+
+            .quick-exit-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .keyboard-hint {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════
+         BOTANICAL SVG BACKGROUND (procedural, organic)
+         ═══════════════════════════════════════════ -->
+    <svg class="botanical-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900"
+        preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <!-- River stones — organic ovals -->
+        <ellipse class="stone" cx="200" cy="150" rx="110" ry="70" fill="none" stroke="var(--sage-light)"
+            stroke-width="0.5" opacity="0.05" />
+        <ellipse class="stone" cx="1200" cy="250" rx="130" ry="60" fill="none" stroke="var(--sage-light)"
+            stroke-width="0.5" opacity="0.05" />
+        <ellipse class="stone" cx="700" cy="700" rx="90" ry="55" fill="none" stroke="var(--sage-light)"
+            stroke-width="0.5" opacity="0.05" />
+        <ellipse class="stone" cx="350" cy="600" rx="70" ry="100" fill="none" stroke="var(--sage-light)"
+            stroke-width="0.5" opacity="0.05" />
+        <ellipse class="stone" cx="1100" cy="650" rx="100" ry="45" fill="none" stroke="var(--sage-light)"
+            stroke-width="0.5" opacity="0.05" />
+        <ellipse class="stone" cx="900" cy="120" rx="80" ry="50" fill="none" stroke="var(--sage-light)"
+            stroke-width="0.5" opacity="0.05" />
+        <ellipse class="stone" cx="500" cy="400" rx="120" ry="65" fill="none" stroke="var(--sage-light)"
+            stroke-width="0.5" opacity="0.06" />
+
+        <!-- Arcing grass / creek lines -->
+        <path class="grass" d="M0 300 Q 360 250, 720 320 T 1440 280" fill="none" stroke="var(--mauve-light)"
+            stroke-width="0.5" opacity="0.04" />
+        <path class="grass" d="M0 550 Q 300 500, 600 560 T 1200 520" fill="none" stroke="var(--mauve-light)"
+            stroke-width="0.5" opacity="0.04" />
+        <path class="grass" d="M200 800 Q 500 750, 800 810 T 1440 780" fill="none" stroke="var(--mauve-light)"
+            stroke-width="0.5" opacity="0.04" />
+        <path class="grass" d="M100 100 Q 400 60, 700 110 T 1300 80" fill="none" stroke="var(--mauve-light)"
+            stroke-width="0.5" opacity="0.04" />
+
+        <!-- Leaf-vein branching paths (fractal-like) -->
+        <path class="vein"
+            d="M720 450 Q 600 350, 500 200 M720 450 Q 840 350, 940 200 M720 450 Q 680 300, 620 150 M720 450 Q 760 300, 820 150"
+            fill="none" stroke="var(--sage-light)" stroke-width="0.5" opacity="0.03" />
+        <path class="vein" d="M200 700 Q 300 600, 280 450 M200 700 Q 100 600, 120 450 M200 700 Q 250 550, 230 380"
+            fill="none" stroke="var(--sage-light)" stroke-width="0.5" opacity="0.03" />
+        <path class="vein"
+            d="M1200 600 Q 1100 500, 1120 350 M1200 600 Q 1300 500, 1280 350 M1200 600 Q 1150 450, 1170 280" fill="none"
+            stroke="var(--sage-light)" stroke-width="0.5" opacity="0.03" />
+    </svg>
+
+    <!-- Noise texture overlay -->
+    <svg class="noise-overlay" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <filter id="noiseFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#noiseFilter)" />
+    </svg>
+
+    <!-- ═══════════════════════════════════════════
+         HOMEPAGE
+         ═══════════════════════════════════════════ -->
+    <header class="global-nav">
+        <!-- Logo/Wordmark -->
+        <a href="#" class="wordmark-nav" aria-label="IntegrAlly Home">Integr<span>Ally</span></a>
+        <div class="spacer"></div>
+        <!-- Language Toggle Pill -->
+        <button class="lang-toggle" aria-label="Toggle language">
+            <span class="active">EN</span> | <span style="font-weight: 300; opacity: 0.8;">हिं</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+        <!-- Help Button -->
+        <button class="help-btn" id="navHelpTrigger" aria-label="Open support and privacy resources">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Drawer Overlay & Content -->
+    <div class="help-drawer-overlay" id="helpOverlay" aria-hidden="true"></div>
+    <aside class="help-drawer" id="helpDrawer" role="dialog" aria-modal="true" aria-labelledby="helpTitle"
+        aria-hidden="true">
+        <div class="drawer-header">
+            <h2 id="helpTitle">Help & Resources</h2>
+            <button class="close-btn" id="closeHelp" aria-label="Close help resources">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="drawer-content">
+            <h3>Privacy Promise</h3>
+            <p>We never see your name. We never see your face. This is yours.</p>
+            <h3>Data Storage</h3>
+            <p>Your memories sit locally on your device before safely backing up to your encrypted Safespace.</p>
+            <h3>Quick Exit Shortcut</h3>
+            <p>Press <kbd>Esc</kbd> <kbd>Esc</kbd> quickly, or tap the button in the bottom corner to immediately leave
+                safely. Your history will be replaced to protect your session.</p>
+        </div>
+    </aside>
+
+    <main class="homepage" role="main">
+
+        <!-- ZONE A — Brand Header -->
+        <section class="zone-brand" aria-label="Brand introduction">
+            <h1 class="wordmark">Integr<span class="ally">Ally</span></h1>
+            <p class="tagline">Your memories are valid. Your story deserves to be heard. We help you preserve it.</p>
+            <hr class="brand-rule" aria-hidden="true">
+        </section>
+
+        <!-- ZONE B — Two Safespace Cards -->
+        <section class="zone-cards" aria-label="Choose your path">
+
+            <!-- CARD 1: Begin a New Safespace -->
+            <article class="card card-1">
+                <!-- Atmospheric seedling SVG -->
+                <svg class="card-bg-svg" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+                    <path d="M60 110 C60 70, 40 50, 30 30 Q40 45, 60 40 Q80 45, 90 30 C80 50, 60 70, 60 110Z"
+                        stroke="var(--sage-light)" stroke-width="1" fill="none" />
+                    <line x1="60" y1="110" x2="60" y2="65" stroke="var(--sage-light)" stroke-width="1" />
+                </svg>
+
+                <div class="icon-circle">
+                    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+                        <path d="M16 28 C16 18, 10 13, 7 8 Q11 12, 16 11 Q21 12, 25 8 C22 13, 16 18, 16 28Z"
+                            fill="var(--sage)" />
+                        <line x1="16" y1="28" x2="16" y2="17" stroke="var(--sage)" stroke-width="1.5" />
+                    </svg>
+                </div>
+
+                <h2>Begin a New Safespace</h2>
+                <p class="body-copy">A private, secure place to gather your memories at your own pace. No personal
+                    information required. Your space, your rules.</p>
+
+                <hr class="card-divider" aria-hidden="true">
+
+                <span class="badge-amber">Optional Safety Feature</span>
+                <p class="safecard-text">After creating your Safespace, you can download a SafeCard — a disguised image
+                    file containing your access details. Keep it safe, like a spare key.</p>
+
+                <button class="btn-primary" id="createSafespace" aria-label="Create My Safespace">
+                    <!-- Seedling icon left -->
+                    <svg class="icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ivory)"
+                        stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M12 22 C12 14, 7 10, 4 5 Q8 9, 12 8 Q16 9, 20 5 C17 10, 12 14, 12 22Z" />
+                    </svg>
+                    Create My Safespace
+                    <!-- Arrow icon right -->
+                    <svg class="icon-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ivory)"
+                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 5l7 7-7 7" />
+                    </svg>
+                </button>
+                <p class="btn-note">No email. No phone. No name needed.</p>
+            </article>
+
+            <!-- CARD 2: Return to Your Safespace -->
+            <article class="card card-2">
+                <!-- Atmospheric key SVG -->
+                <svg class="card-bg-svg" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+                    <circle cx="35" cy="35" r="18" stroke="var(--mauve-light)" stroke-width="1" fill="none"
+                        opacity="0.2" />
+                    <line x1="50" y1="45" x2="85" y2="80" stroke="var(--mauve-light)" stroke-width="1" opacity="0.2" />
+                    <line x1="70" y1="65" x2="78" y2="57" stroke="var(--mauve-light)" stroke-width="1" opacity="0.2" />
+                    <line x1="78" y1="72" x2="86" y2="64" stroke="var(--mauve-light)" stroke-width="1" opacity="0.2" />
+                </svg>
+
+                <div class="icon-circle">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="6" stroke="var(--mauve)" stroke-width="1.5" fill="none" />
+                        <line x1="17" y1="16" x2="28" y2="27" stroke="var(--mauve)" stroke-width="1.5"
+                            stroke-linecap="round" />
+                        <line x1="23" y1="22" x2="26" y2="19" stroke="var(--mauve)" stroke-width="1.5"
+                            stroke-linecap="round" />
+                    </svg>
+                </div>
+
+                <h2>Return to Your Safespace</h2>
+                <p class="body-copy">Welcome back. Your memories are waiting, exactly as you left them.</p>
+
+                <form id="returnForm" autocomplete="off">
+                    <div class="form-group">
+                        <label for="safespaceName">Your Safespace Name</label>
+                        <p class="microtext">The name you chose when you started</p>
+                        <input type="text" id="safespaceName" placeholder="e.g. Case-492-Blue-Fox" aria-required="true">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="safespacePin">Your PIN or Passphrase</label>
+                        <p class="microtext">The 6-digit PIN or phrase you created</p>
+                        <div class="input-wrapper">
+                            <input type="password" id="safespacePin" placeholder="••••••" aria-required="true">
+                            <button type="button" class="toggle-visibility" id="togglePin"
+                                aria-label="Toggle PIN visibility">
+                                <!-- Leaf-eye hybrid icon -->
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7Z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                    <!-- Subtle leaf vein overlaid on eye -->
+                                    <path d="M12 9 Q13 10.5, 12 12" opacity="0.5" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-secondary" aria-label="Open My Safespace">Open My Safespace
+                        →</button>
+                </form>
+                <p class="btn-note">Forgot your name or PIN? See the Help section (?)</p>
+            </article>
+
+        </section>
+
+        <!-- ZONE C — Footer Strip -->
+        <footer class="zone-footer" aria-label="Privacy statement">
+            <hr class="footer-rule" aria-hidden="true">
+            <p class="footer-text">IntegrAlly holds zero personal identifying information. Your Safespace belongs only
+                to you.</p>
+        </footer>
+
+    </main>
+
+    <!-- ═══════════════════════════════════════════
+         SAFESPACE CREATION MODAL (3-step)
+         ═══════════════════════════════════════════ -->
+    <div class="modal-overlay" id="creationModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"
+        aria-hidden="true">
+        <div class="modal" id="modalBox">
+
+            <!-- Dismiss button -->
+            <button class="modal-dismiss" id="modalDismiss" aria-label="Close creation flow">×</button>
+
+            <!-- Inline dismiss confirmation -->
+            <div class="dismiss-confirm" id="dismissConfirm" role="alert">
+                <p>Are you sure you want to leave? Your Safespace hasn't been created yet.</p>
+                <button class="confirm-leave" id="confirmLeave">Yes, leave</button>
+                <button id="confirmStay">Stay here</button>
+            </div>
+
+            <!-- Step dots -->
+            <nav class="step-dots" aria-label="Creation progress">
+                <div class="step-dot active" id="dot-1" aria-label="Step 1 of 3"></div>
+                <div class="step-connector"></div>
+                <div class="step-dot" id="dot-2" aria-label="Step 2 of 3"></div>
+                <div class="step-connector"></div>
+                <div class="step-dot" id="dot-3" aria-label="Step 3 of 3"></div>
+            </nav>
+
+            <div class="modal-body">
+
+                <!-- ── STEP 1 ── -->
+                <section class="step-panel active" id="step1" aria-labelledby="s1heading">
+                    <div class="step-icon">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                            <circle cx="24" cy="24" r="24" fill="var(--ivory-deep)" />
+                            <path d="M24 40 C24 28, 14 22, 10 14 Q16 20, 24 18 Q32 20, 38 14 C34 22, 24 28, 24 40Z"
+                                fill="var(--sage)" />
+                            <line x1="24" y1="40" x2="24" y2="26" stroke="var(--sage)" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+
+                    <h2 class="modal-heading" id="s1heading">Let's give your Safespace a name</h2>
+                    <p class="modal-body-text">This is a name only you will know. It can be anything — a word, a phrase,
+                        something meaningful only to you. We generate one for you below, but you can change it.</p>
+
+                    <!-- Auto-generated name -->
+                    <div class="name-display-wrap">
+                        <div class="name-display" id="nameDisplay" role="button" tabindex="0"
+                            aria-label="Tap to edit your Safespace name">
+                            <span class="name-display-text" id="nameDisplayText">Case-492-Blue-Fox</span>
+                            <span class="name-display-hint">Auto-generated for you. Tap to change.</span>
+                        </div>
+                        <input type="text" class="name-input" id="nameInput" aria-label="Your Safespace name">
+                        <button class="name-refresh" id="nameRefresh" aria-label="Generate a new Safespace name">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 4v6h-6" />
+                                <path d="M1 20v-6h6" />
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <button class="modal-btn" id="step1Next" disabled aria-label="Confirm this Safespace name">This is
+                        my name →</button>
+                </section>
+
+                <!-- ── STEP 2 ── -->
+                <section class="step-panel" id="step2" aria-labelledby="s2heading">
+                    <h2 class="modal-heading" id="s2heading">Now, create your key</h2>
+                    <p class="modal-body-text">Choose something you'll remember. A short phrase, a date that's
+                        meaningful to you, or a 6-digit number. This is never stored anywhere — only you know it.</p>
+
+                    <!-- PIN / Passphrase toggle -->
+                    <div class="key-mode-tabs" role="group" aria-label="Choose key type">
+                        <button class="key-tab active" id="tabPin" aria-pressed="true">6-digit PIN</button>
+                        <button class="key-tab" id="tabPhrase" aria-pressed="false">Passphrase</button>
+                    </div>
+
+                    <!-- PIN mode -->
+                    <div id="pinMode">
+                        <div class="pin-boxes" role="group" aria-label="Enter your 6-digit PIN">
+                            <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]"
+                                aria-label="Digit 1">
+                            <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]"
+                                aria-label="Digit 2">
+                            <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]"
+                                aria-label="Digit 3">
+                            <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]"
+                                aria-label="Digit 4">
+                            <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]"
+                                aria-label="Digit 5">
+                            <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]"
+                                aria-label="Digit 6">
+                        </div>
+                        <!-- PIN confirm -->
+                        <div style="margin-bottom: 16px;">
+                            <label class="field-label" for="pinConfirm">Enter it once more to be sure</label>
+                            <div class="confirm-wrap">
+                                <div class="pin-boxes" role="group" aria-label="Confirm your 6-digit PIN"
+                                    style="justify-content: flex-start; margin-bottom: 0;">
+                                    <input type="password" class="pin-box pin-confirm-box" maxlength="1"
+                                        inputmode="numeric" pattern="[0-9]" aria-label="Confirm digit 1">
+                                    <input type="password" class="pin-box pin-confirm-box" maxlength="1"
+                                        inputmode="numeric" pattern="[0-9]" aria-label="Confirm digit 2">
+                                    <input type="password" class="pin-box pin-confirm-box" maxlength="1"
+                                        inputmode="numeric" pattern="[0-9]" aria-label="Confirm digit 3">
+                                    <input type="password" class="pin-box pin-confirm-box" maxlength="1"
+                                        inputmode="numeric" pattern="[0-9]" aria-label="Confirm digit 4">
+                                    <input type="password" class="pin-box pin-confirm-box" maxlength="1"
+                                        inputmode="numeric" pattern="[0-9]" aria-label="Confirm digit 5">
+                                    <input type="password" class="pin-box pin-confirm-box" maxlength="1"
+                                        inputmode="numeric" pattern="[0-9]" aria-label="Confirm digit 6">
+                                </div>
+                                <span class="confirm-check" id="pinMatchCheck" aria-live="polite">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passphrase mode -->
+                    <div id="phraseMode" style="display:none;">
+                        <div class="passphrase-wrap">
+                            <textarea class="passphrase-input" id="passphraseInput"
+                                placeholder="e.g. 'rainy tuesday green boots'" aria-label="Your passphrase"></textarea>
+                            <button class="passphrase-toggle" id="phraseToggle" type="button"
+                                aria-label="Show or hide passphrase">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round">
+                                    <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7Z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Strength bar -->
+                        <div class="strength-bar-wrap" aria-live="polite">
+                            <div class="strength-bar-track">
+                                <div class="strength-bar-fill" id="strengthFill"></div>
+                            </div>
+                            <div class="strength-labels">
+                                <span id="strengthFragile" style="color: var(--mauve);">fragile</span>
+                                <span id="strengthOkay" style="color: var(--amber-glow);">okay</span>
+                                <span id="strengthStrong" style="color: var(--sage);">strong</span>
+                            </div>
+                        </div>
+                        <!-- Passphrase confirm -->
+                        <div style="margin-bottom: 16px;">
+                            <label class="field-label" for="phraseConfirm">Enter it once more to be sure</label>
+                            <div class="confirm-wrap">
+                                <input type="password" class="field-input" id="phraseConfirm"
+                                    placeholder="Repeat your passphrase" aria-label="Confirm passphrase">
+                                <span class="confirm-check" id="phraseMatchCheck" aria-live="polite">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="modal-btn" id="step2Next" disabled>Set my key →</button>
+                </section>
+
+                <!-- ── STEP 3 ── -->
+                <section class="step-panel" id="step3" aria-labelledby="s3heading">
+                    <!-- Sanctuary illustration -->
+                    <div class="sanctuary-illustration" aria-hidden="true">
+                        <svg viewBox="0 0 560 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="560" height="200" fill="var(--ivory-deep)" rx="24" />
+                            <!-- Soft glow -->
+                            <ellipse cx="280" cy="140" rx="100" ry="40" fill="var(--sage-light)" opacity="0.18" />
+                            <!-- Arch of bent branches -->
+                            <path d="M160 200 Q160 80, 280 60 Q400 80, 400 200" stroke="var(--sage)" stroke-width="2"
+                                fill="none" stroke-linecap="round" />
+                            <path d="M190 200 Q190 95, 280 78 Q370 95, 370 200" stroke="var(--sage-light)"
+                                stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round" />
+                            <!-- Left branches -->
+                            <path d="M160 180 Q130 160, 120 130" stroke="var(--sage)" stroke-width="1.5" fill="none"
+                                stroke-linecap="round" />
+                            <path d="M160 160 Q140 145, 135 125" stroke="var(--sage-light)" stroke-width="1" fill="none"
+                                stroke-linecap="round" opacity="0.6" />
+                            <path d="M120 130 Q110 115, 115 100" stroke="var(--sage)" stroke-width="1" fill="none"
+                                stroke-linecap="round" opacity="0.5" />
+                            <!-- Right branches -->
+                            <path d="M400 180 Q430 160, 440 130" stroke="var(--sage)" stroke-width="1.5" fill="none"
+                                stroke-linecap="round" />
+                            <path d="M400 160 Q420 145, 425 125" stroke="var(--sage-light)" stroke-width="1" fill="none"
+                                stroke-linecap="round" opacity="0.6" />
+                            <path d="M440 130 Q450 115, 445 100" stroke="var(--sage)" stroke-width="1" fill="none"
+                                stroke-linecap="round" opacity="0.5" />
+                            <!-- Stars / leaves drifting upward -->
+                            <g class="drifting-leaf">
+                                <path d="M280 130 Q283 124, 280 118 Q277 124, 280 130Z" fill="var(--mauve-light)"
+                                    opacity="0.6" />
+                            </g>
+                            <g class="drifting-leaf">
+                                <path d="M260 140 Q263 134, 260 128 Q257 134, 260 140Z" fill="var(--sage-light)"
+                                    opacity="0.5" />
+                            </g>
+                            <g class="drifting-leaf">
+                                <path d="M300 135 Q303 129, 300 123 Q297 129, 300 135Z" fill="var(--mauve)"
+                                    opacity="0.4" />
+                            </g>
+                            <!-- Gentle ground -->
+                            <path d="M180 200 Q280 185, 380 200" stroke="var(--sage-light)" stroke-width="1" fill="none"
+                                opacity="0.4" />
+                        </svg>
+                    </div>
+
+                    <h2 class="modal-heading large" id="s3heading">Your Safespace is ready.</h2>
+                    <p style="font-size:15px; color:var(--mauve); margin-bottom:20px; line-height:1.75;">A private,
+                        protected place — just for you. No one else can enter.</p>
+
+                    <!-- Details card -->
+                    <div class="details-card">
+                        <p class="details-label">Your Safespace name</p>
+                        <p class="details-value" id="summaryName">Case-492-Blue-Fox</p>
+                        <div class="details-divider"></div>
+                        <p class="details-label">Your key</p>
+                        <div class="details-value masked">
+                            <span id="summaryKeyMask">••••••</span>
+                            <button class="eye-toggle" id="summaryEyeToggle" aria-label="Toggle key visibility">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round">
+                                    <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7Z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SafeCard section -->
+                    <div class="safecard-box">
+                        <span class="badge-amber">Recommended</span>
+                        <p>Download your SafeCard — a disguised image file that looks like a generic digital receipt.
+                            You can keep it hidden on your device. It contains your Safespace name so you can always
+                            return.</p>
+                        <button class="btn-download" id="downloadSafeCard" aria-label="Download your SafeCard">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Download SafeCard
+                        </button>
+                    </div>
+
+                    <button class="modal-btn large" id="enterSafespace">Enter My Safespace <span
+                            class="enter-btn-arrow">→</span></button>
+                </section>
+
+            </div><!-- /modal-body -->
+        </div><!-- /modal -->
+    </div><!-- /modal-overlay -->
+
+    <!-- ═══════════════════════════════════════════
+         QUICK EXIT BUTTON
+         ═══════════════════════════════════════════ -->
+
+    <div class="quick-exit-wrapper">
+        <span class="keyboard-hint" aria-hidden="true">⎋⎋</span>
+        <button class="quick-exit-btn" id="quickExitBtn" aria-label="Leave safely and securely">
+            <span class="quick-exit-tooltip" role="tooltip">Takes you away safely. Your progress is saved.</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12A10 10 0 0 0 11 2C8 2 5.5 3.5 3 6c0 0 1 8 6 12s12 3 12 3-1-4-3-9z" />
+                <path d="M21 21c-5-2-9-7-10-12" />
+            </svg>
+            <span class="exit-label">Leave Safely →</span>
+        </button>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════
+         JAVASCRIPT
+         ═══════════════════════════════════════════ -->
+    <script>
+        // --- Quick Exit ---
+        const quickExitBtn = document.getElementById('quickExitBtn');
+        let lastEscape = 0;
+        let pressTimer;
+
+        function performSafeExit() {
+            window.history.replaceState(null, '', 'https://www.google.com');
+            window.location.replace('https://www.google.com');
+        }
+
+        // Double-Escape detection
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const now = Date.now();
+                if (now - lastEscape < 500) {
+                    performSafeExit();
+                }
+                lastEscape = now;
+            }
+        });
+
+        // Click
+        quickExitBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            performSafeExit();
+        });
+
+        // Mobile long-press (500ms)
+        quickExitBtn.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(performSafeExit, 500);
+        });
+        quickExitBtn.addEventListener('touchend', () => clearTimeout(pressTimer));
+        quickExitBtn.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+
+        // --- PIN Visibility Toggle ---
+        const togglePin = document.getElementById('togglePin');
+        const pinInput = document.getElementById('safespacePin');
+
+        togglePin.addEventListener('click', () => {
+            const isPassword = pinInput.type === 'password';
+            pinInput.type = isPassword ? 'text' : 'password';
+            togglePin.setAttribute('aria-label', isPassword ? 'Hide PIN' : 'Show PIN');
+        });
+
+
+        // --- Return Form ---
+        document.getElementById('returnForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('safespaceName').value.trim();
+            const pin = document.getElementById('safespacePin').value;
+
+            if (!name || !pin) {
+                alert('Please enter your Safespace Name and PIN.');
+                return;
+            }
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            // Show connecting state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Connecting...';
+
+            if (!supabaseClient) {
+                alert("Please configure your Supabase URL and anon key inside the script tags to activate secure storage.");
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                return;
+            }
+
+            try {
+                // (1) Hash the PIN with SHA-256 the same way as creation
+                const pinHash = await hashPIN(pin);
+
+                // (2) Query safespaces table where case_name matches AND pin_hash matches
+                const { data, error: apiIssue } = await supabaseClient
+                    .from('safespaces')
+                    .select('id')
+                    .eq('case_name', name)
+                    .eq('pin_hash', pinHash);
+
+                if (apiIssue) {
+                    throw apiIssue;
+                }
+
+                if (data && data.length > 0) {
+                    // (3) If found, save the UUID to localStorage activeCase and redirect to dashboard.html
+                    localStorage.setItem('activeCase', data[0].id);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    // (4) If not found, show a soft message — never the word 'wrong' or 'invalid'.
+                    // Use 'We couldn't find a match — please check your details.'
+                    alert("We couldn't find a match — please check your details.");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            } catch (exception) {
+                console.warn("Trouble connecting to Safespace:", exception);
+                alert("We encountered a temporary problem connecting to the secure network. Please check your connection and try again.");
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+
+
+        // --- Language Toggle (state toggle demo) ---
+        const langToggle = document.querySelector('.lang-toggle');
+        if (langToggle) {
+            let isEnglish = true;
+            langToggle.addEventListener('click', () => {
+                isEnglish = !isEnglish;
+                const spans = langToggle.querySelectorAll('span');
+                spans[0].classList.toggle('active', isEnglish);
+                spans[1].classList.toggle('active', !isEnglish);
+                spans[1].style.fontWeight = isEnglish ? '300' : '600';
+                spans[1].style.opacity = isEnglish ? '0.8' : '1';
+                spans[0].style.fontWeight = isEnglish ? '600' : '300';
+                spans[0].style.opacity = isEnglish ? '1' : '0.8';
+            });
+        }
+
+        // ═══════════════════════════════════════════
+        //  CREATION MODAL LOGIC
+        // ═══════════════════════════════════════════
+
+        const modal = document.getElementById('creationModal');
+        const modalBox = document.getElementById('modalBox');
+        const modalDismiss = document.getElementById('modalDismiss');
+        const dismissConf = document.getElementById('dismissConfirm');
+        const confirmLeave = document.getElementById('confirmLeave');
+        const confirmStay = document.getElementById('confirmStay');
+
+        // Name-generation word lists
+        const colors = ['Azure', 'Cobalt', 'Crimson', 'Ember', 'Fern', 'Glacier', 'Hazel', 'Indigo', 'Jade', 'Lark', 'Mauve', 'Opal', 'Pine', 'Raven', 'Sage', 'Storm', 'Teal', 'Umber', 'Violet', 'Willow'];
+        const animals = ['Badger', 'Bear', 'Crane', 'Deer', 'Dove', 'Falcon', 'Finch', 'Fox', 'Hare', 'Hawk', 'Heron', 'Ibis', 'Jay', 'Kite', 'Lark', 'Lynx', 'Moth', 'Otter', 'Robin', 'Swan'];
+
+        function generateName() {
+            const n = Math.floor(Math.random() * 900) + 100;
+            const c = colors[Math.floor(Math.random() * colors.length)];
+            const a = animals[Math.floor(Math.random() * animals.length)];
+            return `Case-${n}-${c}-${a}`;
+        }
+
+        let currentName = generateName();
+        let currentKey = '';
+        let currentStep = 1;
+
+        // Open modal
+        document.getElementById('createSafespace').addEventListener('click', () => {
+            currentName = generateName();
+            document.getElementById('nameDisplayText').textContent = currentName;
+            document.getElementById('nameInput').value = currentName;
+            goToStep(1);
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            modalBox.scrollTop = 0;
+            dismissConf.classList.remove('show');
+        });
+
+        // Close / dismiss
+        function closeModal() {
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            dismissConf.classList.remove('show');
+        }
+
+        modalDismiss.addEventListener('click', () => {
+            if (currentStep < 3) {
+                dismissConf.classList.toggle('show');
+            } else {
+                closeModal();
+            }
+        });
+
+        confirmLeave.addEventListener('click', closeModal);
+        confirmStay.addEventListener('click', () => dismissConf.classList.remove('show'));
+
+        // Close on overlay click (outside modal box)
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal && currentStep === 3) closeModal();
+        });
+
+        // Step navigation
+        function goToStep(n) {
+            currentStep = n;
+            document.querySelectorAll('.step-panel').forEach((p, i) => {
+                p.classList.toggle('active', i + 1 === n);
+            });
+            document.querySelectorAll('.step-dot').forEach((d, i) => {
+                d.classList.toggle('active', i + 1 === n);
+            });
+            modalBox.scrollTop = 0;
+        }
+
+        // ── STEP 1: Name ──
+        const nameDisplay = document.getElementById('nameDisplay');
+        const nameDisplayText = document.getElementById('nameDisplayText');
+        const nameInput = document.getElementById('nameInput');
+        const nameRefresh = document.getElementById('nameRefresh');
+        const step1Next = document.getElementById('step1Next');
+
+        function setStep1Name(name) {
+            currentName = name;
+            nameDisplayText.textContent = name;
+            nameInput.value = name;
+            step1Next.disabled = !name.trim();
+        }
+
+        // Show display area initially; enable Next when name exists
+        setStep1Name(currentName);
+
+        // Tap name display → switch to input
+        nameDisplay.addEventListener('click', () => {
+            nameDisplay.style.display = 'none';
+            nameInput.style.display = 'block';
+            nameInput.focus();
+            nameInput.select();
+        });
+        nameDisplay.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') nameDisplay.click();
+        });
+
+        // Input → update name display on blur
+        nameInput.addEventListener('blur', () => {
+            const val = nameInput.value.trim() || currentName;
+            setStep1Name(val);
+            nameInput.style.display = 'none';
+            nameDisplay.style.display = 'block';
+        });
+        nameInput.addEventListener('input', () => {
+            step1Next.disabled = !nameInput.value.trim();
+        });
+
+        nameRefresh.addEventListener('click', () => {
+            setStep1Name(generateName());
+            nameInput.style.display = 'none';
+            nameDisplay.style.display = 'block';
+        });
+
+        step1Next.addEventListener('click', () => goToStep(2));
+
+        // ── STEP 2: Key ──
+        const tabPin = document.getElementById('tabPin');
+        const tabPhrase = document.getElementById('tabPhrase');
+        const pinMode = document.getElementById('pinMode');
+        const phraseMode = document.getElementById('phraseMode');
+        const step2Next = document.getElementById('step2Next');
+        const pinBoxes = document.querySelectorAll('.pin-box:not(.pin-confirm-box)');
+        const pinConfBoxes = document.querySelectorAll('.pin-confirm-box');
+        const pinMatchChk = document.getElementById('pinMatchCheck');
+        const passphraseIn = document.getElementById('passphraseInput');
+        const phraseConf = document.getElementById('phraseConfirm');
+        const phraseChk = document.getElementById('phraseMatchCheck');
+        const strengthFill = document.getElementById('strengthFill');
+        const phraseToggle = document.getElementById('phraseToggle');
+
+        let keyMode = 'pin';
+
+        function switchMode(mode) {
+            keyMode = mode;
+            tabPin.classList.toggle('active', mode === 'pin');
+            tabPin.setAttribute('aria-pressed', mode === 'pin');
+            tabPhrase.classList.toggle('active', mode === 'phrase');
+            tabPhrase.setAttribute('aria-pressed', mode === 'phrase');
+            pinMode.style.display = mode === 'pin' ? '' : 'none';
+            phraseMode.style.display = mode === 'phrase' ? '' : 'none';
+            checkStep2Valid();
+        }
+
+        tabPin.addEventListener('click', () => switchMode('pin'));
+        tabPhrase.addEventListener('click', () => switchMode('phrase'));
+
+        // PIN OTP auto-advance
+        pinBoxes.forEach((box, i) => {
+            box.addEventListener('input', () => {
+                box.value = box.value.replace(/\D/g, '').slice(-1);
+                if (box.value && i < pinBoxes.length - 1) pinBoxes[i + 1].focus();
+                checkPinMatch(); checkStep2Valid();
+            });
+            box.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !box.value && i > 0) pinBoxes[i - 1].focus();
+                if (e.key === 'ArrowRight' && i < pinBoxes.length - 1) pinBoxes[i + 1].focus();
+                if (e.key === 'ArrowLeft' && i > 0) pinBoxes[i - 1].focus();
+            });
+        });
+
+        pinConfBoxes.forEach((box, i) => {
+            box.addEventListener('input', () => {
+                box.value = box.value.replace(/\D/g, '').slice(-1);
+                if (box.value && i < pinConfBoxes.length - 1) pinConfBoxes[i + 1].focus();
+                checkPinMatch(); checkStep2Valid();
+            });
+            box.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !box.value && i > 0) pinConfBoxes[i - 1].focus();
+            });
+        });
+
+        function getPinValue(boxes) {
+            return [...boxes].map(b => b.value).join('');
+        }
+
+        function checkPinMatch() {
+            const pin = getPinValue(pinBoxes);
+            const conf = getPinValue(pinConfBoxes);
+            const match = pin.length === 6 && conf.length === 6 && pin === conf;
+            pinMatchChk.classList.toggle('show', match);
+            if (match) currentKey = pin;
+        }
+
+        // Passphrase strength
+        function scorePassphrase(val) {
+            if (!val) return 0;
+            let score = 0;
+            if (val.length > 8) score++;
+            if (val.length > 16) score++;
+            if (/\s/.test(val)) score++;
+            if (val.split(' ').length > 3) score++;
+            return score; // 0–4
+        }
+
+        // --- Help Drawer Logic ---
+        const helpOverlay = document.getElementById('helpOverlay');
+        const helpDrawer = document.getElementById('helpDrawer');
+        const navHelpTrigger = document.getElementById('navHelpTrigger');
+        const closeHelp = document.getElementById('closeHelp');
+
+        function openDrawer() {
+            helpOverlay.classList.add('open');
+            helpDrawer.classList.add('open');
+            helpOverlay.setAttribute('aria-hidden', 'false');
+            helpDrawer.setAttribute('aria-hidden', 'false');
+            closeHelp.focus();
+        }
+
+        function closeDrawer() {
+            helpOverlay.classList.remove('open');
+            helpDrawer.classList.remove('open');
+            helpOverlay.setAttribute('aria-hidden', 'true');
+            helpDrawer.setAttribute('aria-hidden', 'true');
+            navHelpTrigger.focus();
+        }
+
+        navHelpTrigger.addEventListener('click', openDrawer);
+        closeHelp.addEventListener('click', closeDrawer);
+        helpOverlay.addEventListener('click', closeDrawer);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && helpDrawer.classList.contains('open')) {
+                closeDrawer();
+                e.stopPropagation();
+            }
+        });
+
+        passphraseIn.addEventListener('input', () => {
+            const val = passphraseIn.value;
+            const score = scorePassphrase(val);
+            const pct = Math.min(100, score * 25);
+            let color = 'var(--mauve)';
+            if (score >= 3) color = 'var(--sage)';
+            else if (score >= 2) color = 'var(--amber-glow)';
+            strengthFill.style.width = pct + '%';
+            strengthFill.style.background = color;
+            checkPhraseMatch(); checkStep2Valid();
+        });
+
+        phraseConf.addEventListener('input', () => { checkPhraseMatch(); checkStep2Valid(); });
+
+        function checkPhraseMatch() {
+            const match = passphraseIn.value && passphraseIn.value === phraseConf.value;
+            phraseChk.classList.toggle('show', match);
+            if (match) currentKey = passphraseIn.value;
+        }
+
+        phraseToggle.addEventListener('click', () => {
+            const isText = passphraseIn.style.webkitTextSecurity === 'none' ||
+                passphraseIn.getAttribute('data-show') === '1';
+            if (isText) {
+                passphraseIn.style.webkitTextSecurity = '';
+                passphraseIn.setAttribute('data-show', '0');
+            } else {
+                passphraseIn.style.webkitTextSecurity = 'none';
+                passphraseIn.setAttribute('data-show', '1');
+            }
+        });
+
+        function checkStep2Valid() {
+            let valid = false;
+            if (keyMode === 'pin') {
+                const pin = getPinValue(pinBoxes);
+                const conf = getPinValue(pinConfBoxes);
+                valid = pin.length === 6 && pin === conf;
+            } else {
+                valid = passphraseIn.value.length > 0 &&
+                    passphraseIn.value === phraseConf.value;
+            }
+            step2Next.disabled = !valid;
+        }
+
+        step2Next.addEventListener('click', () => {
+            // Populate step 3 summary
+            document.getElementById('summaryName').textContent = currentName;
+            document.getElementById('summaryKeyMask').textContent = '••••••';
+            document.getElementById('summaryEyeToggle').dataset.key = currentKey;
+            goToStep(3);
+        });
+
+        // ── STEP 3: Summary ──
+        const eyeToggle = document.getElementById('summaryEyeToggle');
+        const keyMask = document.getElementById('summaryKeyMask');
+        eyeToggle.addEventListener('click', () => {
+            const showing = eyeToggle.dataset.showing === '1';
+            keyMask.textContent = showing ? '••••••' : eyeToggle.dataset.key;
+            eyeToggle.dataset.showing = showing ? '0' : '1';
+            eyeToggle.setAttribute('aria-label', showing ? 'Show key' : 'Hide key');
+        });
+
+        // SafeCard canvas download
+        document.getElementById('downloadSafeCard').addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 480;
+            canvas.height = 280;
+            const ctx = canvas.getContext('2d');
+            // Background
+            ctx.fillStyle = '#F5F5F0';
+            ctx.fillRect(0, 0, 480, 280);
+            // Top header bar
+            ctx.fillStyle = '#D8D4CC';
+            ctx.fillRect(0, 0, 480, 48);
+            // Header text
+            ctx.fillStyle = '#555550';
+            ctx.font = '700 14px monospace';
+            ctx.fillText('SecureVault Ref.', 20, 30);
+            ctx.font = '12px monospace';
+            ctx.fillStyle = '#888880';
+            ctx.fillText('TRANSACTION CONFIRMATION', 300, 30);
+            // Date
+            const d = new Date();
+            const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            ctx.font = '12px monospace';
+            ctx.fillStyle = '#777770';
+            ctx.fillText('Date: ' + dateStr, 20, 80);
+            // Reference number
+            ctx.fillStyle = '#444440';
+            ctx.font = '700 18px monospace';
+            ctx.fillText(currentName, 20, 120);
+            // Decorative barcode lines
+            ctx.fillStyle = '#AAAAAA';
+            for (let i = 0; i < 40; i++) {
+                const x = 20 + i * 8;
+                const h = 20 + (Math.random() > 0.5 ? 10 : 0);
+                ctx.fillRect(x, 170, 3, h);
+            }
+            ctx.font = '10px monospace';
+            ctx.fillStyle = '#AAAAAA';
+            ctx.fillText('REF-' + Math.random().toString(36).slice(2, 10).toUpperCase(), 20, 220);
+            ctx.fillText('Keep for your records.', 20, 240);
+            // Download
+            const link = document.createElement('a');
+            link.download = 'confirmation-ref.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Supabase Integration Configuration
+        // Please replace these placeholders with your actual Supabase credentials.
+        const SUPABASE_URL = "https://jcikghzgduboseasubny.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_8CbBilkkiiJEHGRkvNcppg_WitEkWSf";
+
+        let supabaseClient = null;
+        if (SUPABASE_URL && SUPABASE_ANON_KEY &&
+            SUPABASE_URL.trim() !== "" &&
+            SUPABASE_ANON_KEY.trim() !== "") {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        // Hash PIN or Passphrase using SHA-256 and convert to hex string
+        async function hashPIN(pin) {
+            const msgBuffer = new TextEncoder().encode(pin);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        document.getElementById('enterSafespace').addEventListener('click', async () => {
+            const enterBtn = document.getElementById('enterSafespace');
+            const originalText = enterBtn.innerHTML;
+
+            // Visual feedback - disable button and show custom loading state
+            enterBtn.disabled = true;
+            enterBtn.innerHTML = 'Connecting to your Safespace... <span class="enter-btn-arrow">→</span>';
+
+            if (!supabaseClient) {
+                alert("Please configure your Supabase URL and anon key inside the script tags to activate secure storage.");
+                enterBtn.disabled = false;
+                enterBtn.innerHTML = originalText;
+                return;
+            }
+
+            try {
+                // (1) Hash the PIN using crypto.subtle.digest('SHA-256') and convert to hex string
+                const pinHash = await hashPIN(currentKey);
+
+                // (2) Insert a row into the safespaces table with case_name and pin_hash
+                const { data, error: apiIssue } = await supabaseClient
+                    .from('safespaces')
+                    .insert([{ case_name: currentName, pin_hash: pinHash }])
+                    .select();
+
+                if (apiIssue) {
+                    throw apiIssue;
+                }
+
+                if (data && data.length > 0) {
+                    // (3) Store the returned row's id UUID in localStorage as activeCase
+                    localStorage.setItem('activeCase', data[0].id);
+
+                    closeModal();
+
+                    // (4) Redirect to dashboard.html
+                    window.location.href = 'dashboard.html';
+                } else {
+                    throw "No data returned";
+                }
+            } catch (exception) {
+                console.warn("Trouble setting up Safespace:", exception);
+                alert("We encountered a temporary problem connecting to the secure network. Please check your connection and try again.");
+                enterBtn.disabled = false;
+                enterBtn.innerHTML = originalText;
+            }
+        });
+
+    </script>
+
+    <!-- Custom Cursor -->
+    <style>
+        @media (pointer: fine) {
+            .custom-cursor {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 16px;
+                height: 16px;
+                border: 2px solid var(--sage);
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                transform: translate(-50%, -50%);
+                transition: width 0.2s, height 0.2s, background-color 0.2s;
+            }
+
+            .custom-cursor.hover {
+                width: 40px;
+                height: 40px;
+                background-color: rgba(122, 158, 142, 0.2);
+            }
+
+            .cursor-trail {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 4px;
+                height: 4px;
+                background: var(--sage);
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9998;
+                transform: translate(-50%, -50%);
+                opacity: 0.5;
+                transition: opacity 200ms ease-out;
+            }
+        }
+    </style>
+    <script>
+        (function () {
+            if (window.matchMedia('(pointer: coarse)').matches) return;
+            const cursor = document.createElement('div');
+            cursor.className = 'custom-cursor';
+            document.body.appendChild(cursor);
+            let mouseX = 0, mouseY = 0, cursorX = 0, cursorY = 0;
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX; mouseY = e.clientY;
+                const dot = document.createElement('div');
+                dot.className = 'cursor-trail';
+                dot.style.left = mouseX + 'px'; dot.style.top = mouseY + 'px';
+                document.body.appendChild(dot);
+                setTimeout(() => { dot.style.opacity = '0'; setTimeout(() => dot.remove(), 200); }, 50);
+            });
+            function animateCursor() {
+                cursorX += (mouseX - cursorX) * 0.15; cursorY += (mouseY - cursorY) * 0.15;
+                cursor.style.left = cursorX + 'px'; cursor.style.top = cursorY + 'px';
+                requestAnimationFrame(animateCursor);
+            }
+            requestAnimationFrame(animateCursor);
+            document.body.addEventListener('mouseover', (e) => {
+                if (e.target.closest('button, a, input, [role="button"], .method-card, .conf-btn, label, select')) cursor.classList.add('hover');
+            });
+            document.body.addEventListener('mouseout', (e) => {
+                if (e.target.closest('button, a, input, [role="button"], .method-card, .conf-btn, label, select')) cursor.classList.remove('hover');
+            });
+        })();
+    </script>
+
+    <!-- ── FogCanvas init (Homepage only — Currently disabled) ── 
+    <script>
+        // Wait for fonts + layout so card bounding boxes are accurate
+        window.addEventListener('DOMContentLoaded', function () {
+            if (typeof initFogCanvas === 'function') {
+                initFogCanvas(document.body);
+            }
+        });
+    </script>
+    -->
+</body>
+
+</html>

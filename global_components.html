@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntegrAlly - Global Components</title>
+    <!-- Fonts mapping: Lora for headings, Nunito for body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="theme.js"></script>
+    
+    <style>
+        :root {
+            /* Light Mode Variables */
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --amber-glow: #D4884A;
+            --fog: rgba(247, 244, 238, 0.92);
+
+            /* Typography */
+            --font-display: 'Lora', Georgia, serif;
+            --font-body: 'Nunito', system-ui, sans-serif;
+
+            /* Radii */
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 40px;
+            --radius-pill: 100px;
+
+            /* Shadows */
+            --shadow-whisper: 0 2px 12px rgba(45, 74, 62, 0.06);
+            --shadow-soft: 0 4px 24px rgba(45, 74, 62, 0.10);
+            --shadow-card: 0 8px 40px rgba(45, 74, 62, 0.12);
+
+            /* Motion */
+            --ease-gentle: cubic-bezier(0.34, 1.02, 0.64, 1);
+            --ease-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --duration-fast: 180ms;
+            --duration-mid: 320ms;
+            --duration-slow: 600ms;
+        }
+
+        /* Dark Mode — Preference Sync */
+        @media (prefers-color-scheme: dark) {
+            :root:not(.light-mode) {
+                --ivory: #1A1F1C;
+                --ivory-warm: #222B26;
+                --ivory-deep: #2D3830;
+                --sage: #6B9E8A;
+                --sage-light: #4E7564;
+                --sage-deep: #8BBDAA;
+                --forest: #E8EDE9;
+                --mauve: #C4A0AC;
+                --mauve-light: #6B4E57;
+                --fog: rgba(26, 31, 28, 0.92);
+            }
+        }
+
+        /* ── THEME OVERRIDES ── */
+        .dark-mode {
+            --ivory: #1A1F1C;
+            --ivory-warm: #222B26;
+            --ivory-deep: #2D3830;
+            --sage: #6B9E8A;
+            --sage-light: #4E7564;
+            --sage-deep: #8BBDAA;
+            --forest: #E8EDE9;
+            --mauve: #C4A0AC;
+            --mauve-light: #6B4E57;
+            --fog: rgba(26, 31, 28, 0.92);
+        }
+
+        /* Manual Light Mode Override (Overrides system preference) */
+        .light-mode {
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --fog: rgba(247, 244, 238, 0.92);
+        }
+
+        /* Base Resets */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--ivory);
+            color: var(--forest);
+            min-height: 100vh;
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, .brand-font {
+            font-family: var(--font-display);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        /* Traumatic-Accessible Focussing */
+        *:focus-visible {
+            outline: 3px solid var(--sage);
+            outline-offset: 3px;
+        }
+
+        /* --- 2.2 Navigation Header --- */
+        .global-nav {
+            height: 64px;
+            background: var(--fog);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(164, 127, 138, 0.12);
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 32px;
+            z-index: 100;
+        }
+
+        .wordmark {
+            font-size: 22px;
+            color: var(--forest);
+            text-decoration: none;
+        }
+
+        .wordmark span {
+            color: var(--sage);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .lang-toggle {
+            background: var(--ivory-deep);
+            color: var(--forest);
+            border-radius: var(--radius-pill);
+            height: 32px;
+            padding: 0 12px;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: 16px;
+            transition: transform var(--duration-fast) var(--ease-soft);
+        }
+
+        .lang-toggle:hover {
+            transform: scale(1.02);
+        }
+
+        .lang-toggle .active {
+            color: var(--sage);
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 12px;
+            transition: all var(--duration-fast) var(--ease-soft);
+        }
+
+        .theme-toggle:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        .help-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-soft);
+        }
+
+        .help-btn:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        /* --- Help Drawer --- */
+        .help-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 31, 28, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid) var(--ease-gentle);
+            z-index: 200;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .help-drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .help-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 320px;
+            height: 100vh;
+            background: var(--ivory-warm);
+            box-shadow: var(--shadow-card);
+            transition: transform var(--duration-mid) var(--ease-gentle);
+            z-index: 201;
+            padding: 32px;
+            border-left: 1px solid rgba(164, 127, 138, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .help-drawer.open {
+            transform: translateX(-320px);
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .drawer-header h2 {
+            font-size: 20px;
+            color: var(--forest);
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--mauve);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--duration-fast);
+        }
+
+        .close-btn:hover {
+            background: var(--ivory-deep);
+        }
+
+        .drawer-content h3 {
+            font-family: var(--font-display);
+            font-weight: 400;
+            font-size: 18px;
+            color: var(--sage);
+            margin-top: 24px;
+            margin-bottom: 8px;
+        }
+
+        .drawer-content p {
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.85;
+        }
+
+        /* --- 2.1 The Quick Exit Button --- */
+        .quick-exit-wrapper {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 900;
+        }
+
+        .keyboard-hint {
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 300;
+            color: var(--mauve);
+        }
+
+        .quick-exit-btn {
+            width: 140px;
+            height: 44px;
+            border-radius: var(--radius-pill);
+            background: var(--sage);
+            color: var(--ivory);
+            border: none;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            position: relative;
+            animation: heartbeat-pulse 3s infinite var(--ease-gentle);
+            transition: background var(--duration-fast) var(--ease-soft), transform var(--duration-fast) var(--ease-soft);
+        }
+
+        .quick-exit-btn:hover {
+            background: var(--sage-deep);
+            transform: scale(1.02);
+            animation: none; /* Subside heartbeat slightly on intention */
+        }
+
+        .quick-exit-tooltip {
+            position: absolute;
+            top: -42px;
+            background: var(--fog);
+            color: var(--forest);
+            font-family: var(--font-body);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-soft);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-mid) var(--ease-gentle) 200ms;
+            border: 1px solid rgba(164, 127, 138, 0.15);
+        }
+
+        .quick-exit-btn:hover .quick-exit-tooltip {
+            opacity: 1;
+        }
+
+        @keyframes heartbeat-pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(122, 158, 142, 0); }
+            50%  { box-shadow: 0 0 0 8px rgba(122, 158, 142, 0.4); }
+            100% { box-shadow: 0 0 0 0 rgba(122, 158, 142, 0); }
+        }
+
+        /* Support for reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .quick-exit-btn {
+                animation: none !important; /* No pulsing */
+            }
+        }
+
+        /* Mobile Adaptations */
+        @media (max-width: 480px) {
+            .global-nav {
+                padding: 0 16px;
+            }
+            .wordmark {
+                font-size: 18px;
+            }
+            .help-drawer {
+                width: 100%;
+                right: -100%;
+            }
+            .help-drawer.open {
+                transform: translateX(-100%);
+            }
+            .quick-exit-wrapper {
+                bottom: 24px;
+                right: 24px;
+            }
+            .quick-exit-btn {
+                width: 52px;
+                height: 52px;
+                gap: 0;
+            }
+            .quick-exit-btn span {
+                display: none;
+            }
+            .keyboard-hint {
+                display: none;
+            }
+            /* Make icon slightly larger on mobile as per spec (20x20 bounding box inside 52x52) */
+            .quick-exit-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Semantic Header Navigation -->
+    <header class="global-nav">
+        <!-- Logo/Wordmark -->
+        <a href="#" class="wordmark brand-font" aria-label="IntegrAlly Home">
+            Integr<span>Ally</span>
+        </a>
+        
+        <div class="spacer"></div>
+        
+        <!-- Language Toggle Pill -->
+        <button class="lang-toggle" aria-label="Toggle language">
+            <span class="active">EN</span> | <span style="font-weight: 300; opacity: 0.8;">हिं</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+        
+        <!-- Help Button -->
+        <button class="help-btn" id="helpTrigger" aria-label="Open support and privacy resources">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Drawer Overlay & Content -->
+    <div class="help-drawer-overlay" id="helpOverlay" aria-hidden="true"></div>
+    <aside class="help-drawer" id="helpDrawer" role="dialog" aria-modal="true" aria-labelledby="helpTitle" aria-hidden="true">
+        <div class="drawer-header">
+            <h2 id="helpTitle" class="brand-font">Help & Resources</h2>
+            <button class="close-btn" id="closeHelp" aria-label="Close help resources">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="drawer-content">
+            <h3>Privacy Promise</h3>
+            <p>We never see your name. We never see your face. This is yours.</p>
+
+            <h3>Data Storage</h3>
+            <p>Your memories sit locally on your device before safely backing up to your encrypted Safespace.</p>
+
+            <h3>Quick Exit Shortcut</h3>
+            <p>Press <kbd>Esc</kbd> <kbd>Esc</kbd> quickly, or tap the button in the bottom corner to immediately leave safely. Your history will be replaced to protect your session.</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area (For Demonstration) -->
+    <main style="padding: 48px 32px; max-width: 600px; margin: 0 auto;">
+        <h1 class="brand-font">You are doing beautifully.</h1>
+        <p style="margin-top: 16px; opacity: 0.85;">This is a demonstration of the Nav Header and Quick Exit button built with trauma-informed design principles.</p>
+        <p style="margin-top: 16px; font-size: 14px; color: var(--mauve);">Try hitting Escape twice to test the safety feature, or open the ? menu.</p>
+    </main>
+
+    <!-- Quick Exit Safety Element -->
+    <div class="quick-exit-wrapper">
+        <div class="keyboard-hint" aria-hidden="true">⎋⎋</div>
+        
+        <button class="quick-exit-btn" id="quickExitBtn" aria-label="Leave safely and securely">
+            <div class="quick-exit-tooltip" role="tooltip">Takes you away safely. Your progress is saved.</div>
+            
+            <!-- Custom Leaf SVG (Organic Bezier path, no fill, 1.5px stroke ivory) -->
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12A10 10 0 0 0 11 2C8 2 5.5 3.5 3 6c0 0 1 8 6 12s12 3 12 3-1-4-3-9z"></path>
+                <path d="M21 21c-5-2-9-7-10-12"></path>
+            </svg>
+            <span>Leave Safely &rarr;</span>
+        </button>
+    </div>
+
+    <script>
+        // --- Help Drawer Logic ---
+        const helpOverlay = document.getElementById('helpOverlay');
+        const helpDrawer = document.getElementById('helpDrawer');
+        const helpTrigger = document.getElementById('helpTrigger');
+        const closeHelp = document.getElementById('closeHelp');
+
+        function openDrawer() {
+            helpOverlay.classList.add('open');
+            helpDrawer.classList.add('open');
+            helpOverlay.setAttribute('aria-hidden', 'false');
+            helpDrawer.setAttribute('aria-hidden', 'false');
+            closeHelp.focus(); // Accessibility: send focus inside modal
+        }
+
+        function closeDrawer() {
+            helpOverlay.classList.remove('open');
+            helpDrawer.classList.remove('open');
+            helpOverlay.setAttribute('aria-hidden', 'true');
+            helpDrawer.setAttribute('aria-hidden', 'true');
+            helpTrigger.focus(); // Accessibility: restore focus
+        }
+
+        helpTrigger.addEventListener('click', openDrawer);
+        closeHelp.addEventListener('click', closeDrawer);
+        helpOverlay.addEventListener('click', closeDrawer);
+        
+        // Escape to close drawer
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && helpDrawer.classList.contains('open')) {
+                closeDrawer();
+                // Prevent bubbling to double-escape handler so it doesn't accidentally trigger Exit
+                e.stopPropagation();
+            }
+        });
+
+
+        // --- Quick Exit Safety Logic ---
+        const quickExitBtn = document.getElementById('quickExitBtn');
+        let lastEscape = 0;
+        let pressTimer;
+
+        function performSafeExit() {
+            // Replaces the current history state to prevent 'Back' button exposure
+            window.history.replaceState(null, '', 'https://www.google.com');
+            window.location.replace('https://www.google.com');
+        }
+
+        // 1. Double Escape Key Trigger
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const now = Date.now();
+                // If drawer is open, escape closes drawer (handled above). If not, check double-press.
+                if (!helpDrawer.classList.contains('open')) {
+                    if (now - lastEscape < 500) { // 500ms threshold
+                        performSafeExit();
+                    }
+                    lastEscape = now;
+                }
+            }
+        });
+
+        // 2. Standard Click
+        quickExitBtn.addEventListener('click', (e) => {
+            // Prevent interference if touch event was also fired
+            e.preventDefault(); 
+            performSafeExit();
+        });
+
+        // 3. Mobile Long Press (500ms trigger on touch devices)
+        quickExitBtn.addEventListener('touchstart', (e) => {
+            if (window.innerWidth <= 480) {
+                // Setting 500ms delay for long-press
+                pressTimer = setTimeout(performSafeExit, 500); 
+            }
+        });
+
+        quickExitBtn.addEventListener('touchend', () => {
+             clearTimeout(pressTimer);
+        });
+
+        quickExitBtn.addEventListener('touchmove', () => {
+             clearTimeout(pressTimer); // Cancel if scrolling/moving finger
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IntegrAlly — Add a Memory to your Safespace">
+    <title>IntegrAlly — Add a Memory</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Nunito:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script src="theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* ═══════════════════════════════════════════
+           DESIGN TOKENS
+           ═══════════════════════════════════════════ */
+        :root {
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --amber-glow: #D4884A;
+            --fog: rgba(247, 244, 238, 0.92);
+
+            --font-display: 'Lora', Georgia, serif;
+            --font-body: 'Nunito', system-ui, sans-serif;
+
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 40px;
+            --radius-pill: 100px;
+
+            --shadow-whisper: 0 2px 12px rgba(45, 74, 62, 0.06);
+            --shadow-soft: 0 4px 24px rgba(45, 74, 62, 0.10);
+            --shadow-card: 0 8px 40px rgba(45, 74, 62, 0.12);
+
+            --ease-gentle: cubic-bezier(0.34, 1.02, 0.64, 1);
+            --ease-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --duration-fast: 180ms;
+            --duration-mid: 320ms;
+            --duration-slow: 600ms;
+        }
+
+        /* Dark Mode — Preference Sync */
+        @media (prefers-color-scheme: dark) {
+            :root:not(.light-mode) {
+                --ivory: #1A1F1C;
+                --ivory-warm: #222B26;
+                --ivory-deep: #2D3830;
+                --sage: #6B9E8A;
+                --sage-light: #4E7564;
+                --sage-deep: #8BBDAA;
+                --forest: #E8EDE9;
+                --mauve: #C4A0AC;
+                --mauve-light: #6B4E57;
+                --amber-glow: #D4884A;
+                --fog: rgba(26, 31, 28, 0.92);
+            }
+        }
+
+        /* ── THEME OVERRIDES ── */
+        .dark-mode {
+            --ivory: #1A1F1C;
+            --ivory-warm: #222B26;
+            --ivory-deep: #2D3830;
+            --sage: #6B9E8A;
+            --sage-light: #4E7564;
+            --sage-deep: #8BBDAA;
+            --forest: #E8EDE9;
+            --mauve: #C4A0AC;
+            --mauve-light: #6B4E57;
+            --amber-glow: #D4884A;
+            --fog: rgba(26, 31, 28, 0.92);
+        }
+
+        /* Manual Light Mode Override (Overrides system preference) */
+        .light-mode {
+            --ivory: #F7F4EE;
+            --ivory-warm: #F0EBE1;
+            --ivory-deep: #E5DDD0;
+            --sage: #7A9E8E;
+            --sage-light: #B5CDBF;
+            --sage-deep: #4E7564;
+            --forest: #2D4A3E;
+            --mauve: #A47F8A;
+            --mauve-light: #D4B4BC;
+            --amber-glow: #D4884A;
+            --fog: rgba(247, 244, 238, 0.92);
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+
+        .theme-toggle:hover {
+            background: var(--ivory-deep);
+            transform: scale(1.03);
+            border-color: var(--sage);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--ivory);
+            color: var(--forest);
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--font-display);
+            font-weight: 500;
+        }
+
+        *:focus-visible {
+            outline: 3px solid var(--sage);
+            outline-offset: 3px;
+        }
+
+        /* Dashboard Backdrop & Overlay */
+        .dashboard-backdrop {
+            position: absolute;
+            inset: 0;
+            background: var(--ivory-warm);
+            /* Soft lines to suggest dashboard in the background */
+            background-image: linear-gradient(90deg, var(--ivory-deep) 1px, transparent 1px),
+                linear-gradient(var(--ivory-deep) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+        }
+
+        .frosted-overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--fog);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 2;
+        }
+
+        /* ═══════════════════════════════════════════
+           SLIDE PANEL
+           ═══════════════════════════════════════════ */
+        .slide-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: 900px;
+            background: var(--ivory);
+            box-shadow: var(--shadow-card);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            animation: slideIn 320ms var(--ease-gentle) forwards;
+            overflow-y: auto;
+            border-left: 1px solid rgba(164, 127, 138, 0.12);
+        }
+
+        @keyframes slideIn {
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        .panel-content {
+            padding: 48px 64px 80px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        /* ── Header ── */
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--mauve);
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 32px;
+            transition: color var(--duration-fast);
+        }
+
+        .nav-back:hover {
+            color: var(--forest);
+        }
+
+        .page-header h1 {
+            font-size: 22px;
+            color: var(--forest);
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            font-size: 14px;
+            color: var(--mauve);
+            line-height: 1.75;
+            max-width: 600px;
+        }
+
+        /* ── Method Cards ── */
+        .method-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .method-card {
+            background: var(--ivory-warm);
+            border-radius: var(--radius-xl);
+            border: 1px solid rgba(164, 127, 138, 0.12);
+            box-shadow: var(--shadow-whisper);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: border-color var(--duration-fast),
+                background var(--duration-fast),
+                transform var(--duration-fast);
+        }
+
+        .method-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .method-card.selected {
+            border: 2px solid var(--sage);
+            background: rgba(122, 158, 142, 0.04);
+        }
+
+        .selected-check {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: var(--sage);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity var(--duration-fast), transform var(--duration-fast);
+        }
+
+        .method-card.selected .selected-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .card-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--ivory-deep);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .card-icon-wrap.sage {
+            color: var(--sage);
+        }
+
+        .card-icon-wrap.mauve {
+            color: var(--mauve);
+        }
+
+        .card-icon-wrap.amber {
+            color: var(--amber-glow);
+        }
+
+        .method-card h2 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .method-card p {
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.65;
+            line-height: 1.75;
+            margin-bottom: 24px;
+            flex: 1;
+        }
+
+        .method-cta {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .cta-sage {
+            color: var(--sage);
+        }
+
+        .cta-mauve {
+            color: var(--mauve);
+        }
+
+        .cta-amber {
+            color: var(--amber-glow);
+        }
+
+        .lang-badge {
+            display: inline-block;
+            background: var(--ivory-deep);
+            border-radius: var(--radius-pill);
+            padding: 4px 10px;
+            font-size: 11px;
+            color: var(--forest);
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        .micro-note {
+            font-size: 12px !important;
+            color: var(--mauve) !important;
+            margin-top: 12px;
+            margin-bottom: 0 !important;
+            opacity: 1 !important;
+        }
+
+        /* ── Active Input Areas ── */
+        .input-areas {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .input-area {
+            display: none;
+            animation: fadeIn 300ms var(--ease-soft) forwards;
+        }
+
+        .input-area.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Text Input */
+        .text-input-wrap {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .text-toggle-bar {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .lang-toggle-btn {
+            background: var(--ivory-deep);
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 6px 12px;
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--forest);
+            cursor: pointer;
+        }
+
+        .memory-textarea {
+            width: 100%;
+            min-height: 200px;
+            background: var(--ivory);
+            border: 1.5px solid var(--ivory-deep);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            color: var(--forest);
+            line-height: 1.75;
+            resize: vertical;
+            transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+        }
+
+        .memory-textarea::placeholder {
+            color: var(--mauve);
+            opacity: 0.45;
+        }
+
+        .memory-textarea:focus {
+            border-color: var(--sage);
+            box-shadow: 0 0 0 4px rgba(122, 158, 142, 0.08);
+            outline: none;
+        }
+
+        .word-count {
+            position: absolute;
+            bottom: 16px;
+            right: 24px;
+            font-size: 12px;
+            color: var(--mauve);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Voice Input */
+        .voice-input-wrap {
+            background: var(--ivory-warm);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(164, 127, 138, 0.12);
+        }
+
+        .record-circle {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: var(--mauve);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--ivory);
+            transition: transform var(--duration-fast), background var(--duration-fast);
+            position: relative;
+            border: none;
+        }
+
+        .record-circle:hover {
+            transform: scale(1.05);
+        }
+
+        .record-circle.recording {
+            animation: pulseRecord 1.2s infinite ease-in-out;
+        }
+
+        @keyframes pulseRecord {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+                background: var(--mauve-light);
+            }
+        }
+
+        .voice-status {
+            margin-top: 24px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--forest);
+            text-align: center;
+        }
+
+        .voice-wave-large {
+            display: none;
+            gap: 4px;
+            align-items: center;
+            height: 40px;
+            margin-top: 20px;
+        }
+
+        .voice-wave-large.active {
+            display: flex;
+        }
+
+        .voice-wave-large .bar {
+            width: 4px;
+            background: var(--mauve-light);
+            border-radius: 2px;
+            animation: waveLive 1s infinite ease-in-out;
+        }
+
+        @keyframes waveLive {
+
+            0%,
+            100% {
+                height: 10px;
+            }
+
+            50% {
+                height: 35px;
+            }
+        }
+
+        .voice-actions {
+            display: none;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .voice-actions.active {
+            display: flex;
+            align-items: center;
+        }
+
+        .voice-action-btn {
+            background: transparent;
+            border: none;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--mauve);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .voice-note {
+            font-size: 12px;
+            color: var(--mauve);
+            opacity: 0.8;
+            margin-top: 32px;
+        }
+
+        /* Media Input */
+        .media-dropzone {
+            width: 100%;
+            height: 160px;
+            border: 2px dashed var(--ivory-deep);
+            background: var(--ivory-warm);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color var(--duration-fast), background var(--duration-fast);
+        }
+
+        .media-dropzone:hover {
+            border-color: var(--sage-light);
+            background: var(--ivory);
+        }
+
+        .media-dropzone.dragover {
+            border-color: var(--sage);
+            background: rgba(122, 158, 142, 0.05);
+        }
+
+        .media-dropzone svg {
+            color: var(--sage-light);
+            margin-bottom: 12px;
+        }
+
+        .media-dropzone h3 {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--forest);
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .media-dropzone p {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--mauve);
+        }
+
+        .media-files {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .media-file-card {
+            display: flex;
+            align-items: center;
+            background: var(--ivory-deep);
+            padding: 8px 16px 8px 8px;
+            border-radius: var(--radius-md);
+            gap: 12px;
+        }
+
+        .media-thumb-small {
+            width: 40px;
+            height: 40px;
+            background: var(--sage-light);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ivory);
+        }
+
+        .media-file-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .media-file-name {
+            font-size: 12px;
+            color: var(--forest);
+            font-weight: 600;
+        }
+
+        .media-file-size {
+            font-size: 11px;
+            color: var(--mauve);
+        }
+
+        .media-remove {
+            background: transparent;
+            border: none;
+            color: var(--mauve);
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 8px;
+        }
+
+        .exif-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(122, 158, 142, 0.15);
+            color: var(--sage-deep);
+            padding: 6px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            margin-top: 16px;
+            font-weight: 600;
+        }
+
+        /* ── Confidence Score Selector ── */
+        .confidence-section {
+            border-top: 1px solid var(--ivory-deep);
+            padding-top: 48px;
+        }
+
+        .confidence-section h3 {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--forest);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .confidence-note {
+            font-size: 13px;
+            color: var(--mauve);
+            line-height: 1.75;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto 32px;
+        }
+
+        .confidence-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .conf-btn-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .conf-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--ivory-deep);
+            color: var(--forest);
+            border: none;
+            font-family: var(--font-display);
+            font-size: 18px;
+            cursor: pointer;
+            transition: background var(--duration-fast), color var(--duration-fast), transform 200ms var(--ease-gentle);
+        }
+
+        .conf-btn:hover {
+            background: var(--mauve-light);
+        }
+
+        .conf-btn.selected {
+            background: var(--amber-glow);
+            color: var(--ivory);
+            transform: scale(1);
+        }
+
+        .conf-btn:not(.selected) {
+            transform: scale(0.9);
+        }
+
+        .conf-label {
+            font-size: 13px;
+            color: var(--forest);
+            opacity: 0.8;
+            font-weight: 600;
+        }
+
+        /* ── Save Button ── */
+        .save-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .save-btn {
+            width: 100%;
+            height: 64px;
+            background: var(--sage);
+            border-radius: var(--radius-pill);
+            color: var(--ivory);
+            font-family: var(--font-body);
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background var(--duration-fast), transform var(--duration-fast);
+        }
+
+        .save-btn:hover {
+            background: var(--sage-deep);
+            transform: translateY(-2px);
+        }
+
+        .save-note {
+            font-size: 12px;
+            color: var(--mauve);
+            opacity: 0.6;
+            text-align: center;
+        }
+
+        .save-progress-wrap {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: -8px;
+        }
+
+        .save-progress-wrap.active {
+            display: flex;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: var(--mauve);
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 4px;
+            background: var(--ivory-deep);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--sage);
+            width: 0%;
+            transition: width 15s linear;
+        }
+
+        /* ═══════════════════════════════════════════
+           QUICK EXIT
+           ═══════════════════════════════════════════ */
+        .quick-exit-wrapper {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 900;
+        }
+
+        .keyboard-hint {
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 300;
+            color: var(--mauve);
+        }
+
+        .quick-exit-btn {
+            width: 140px;
+            height: 44px;
+            border-radius: var(--radius-pill);
+            background: var(--sage);
+            color: var(--ivory);
+            border: none;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            position: relative;
+            animation: heartbeat-pulse 3s infinite var(--ease-gentle);
+            transition: background var(--duration-fast) var(--ease-soft),
+                transform var(--duration-fast) var(--ease-soft);
+        }
+
+        .quick-exit-btn:hover {
+            background: var(--sage-deep);
+            transform: scale(1.02);
+            animation: none;
+        }
+
+        @keyframes heartbeat-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(122, 158, 142, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(122, 158, 142, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(122, 158, 142, 0);
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           REDUCED MOTION
+           ═══════════════════════════════════════════ */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .quick-exit-btn,
+            .record-circle.recording,
+            .voice-wave-large .bar {
+                animation: none !important;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .slide-panel {
+                max-width: 100%;
+                border-left: none;
+            }
+
+            .method-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .panel-content {
+                padding: 32px 24px 80px;
+            }
+
+            .nav-back {
+                margin-bottom: 24px;
+            }
+
+            .confidence-buttons {
+                gap: 12px;
+            }
+
+            .conf-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .conf-label {
+                font-size: 11px;
+            }
+
+            .quick-exit-wrapper {
+                bottom: 24px;
+                right: 24px;
+            }
+
+            .quick-exit-btn {
+                width: 52px;
+                height: 52px;
+                gap: 0;
+            }
+
+            .quick-exit-btn .exit-label {
+                display: none;
+            }
+
+            .keyboard-hint {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Fake dashboard background -->
+    <div class="dashboard-backdrop" aria-hidden="true"></div>
+    <!-- Frosted overlay -->
+    <div class="frosted-overlay" aria-hidden="true"></div>
+
+    <!-- MAIN SLIDE-IN PANEL -->
+    <main class="slide-panel" id="slidePanel" role="main" aria-label="Add a Memory pane">
+        <div class="panel-content">
+
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <a href="dashboard.html" class="nav-back" id="navBack" aria-label="Go back to dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    ← Back to your Safespace
+                </a>
+
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <header class="page-header">
+                <h1>Add a Memory</h1>
+                <p>Share what you remember in whatever way feels most natural. You can use one method or all three.</p>
+            </header>
+
+            <!-- Method Selector Cards -->
+            <div class="method-cards" role="group" aria-label="Memory input methods">
+
+                <!-- Card A: Write -->
+                <button class="method-card" id="btn-method-text" aria-pressed="false">
+                    <svg class="selected-check" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div class="card-icon-wrap sage">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        </svg>
+                    </div>
+                    <h2>Write it down</h2>
+                    <p>Use your own words. Fragments are welcome. Write as much or as little as feels right.</p>
+                    <span class="method-cta cta-sage">Start writing →</span>
+                </button>
+
+                <!-- Card B: Voice -->
+                <button class="method-card" id="btn-method-voice" aria-pressed="false">
+                    <svg class="selected-check" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div class="card-icon-wrap mauve">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <rect x="9" y="2" width="6" height="11" rx="3" />
+                            <path d="M5 10a7 7 0 0 0 14 0" />
+                            <line x1="12" y1="19" x2="12" y2="22" />
+                        </svg>
+                    </div>
+                    <h2>Speak it out</h2>
+                    <p>Record your voice. Speak in English or Hindi — we'll help organise the words.</p>
+                    <span class="method-cta cta-mauve">Start recording →</span>
+                    <span class="lang-badge">EN | हिं supported</span>
+                </button>
+
+                <!-- Card C: Media -->
+                <button class="method-card" id="btn-method-media" aria-pressed="false">
+                    <svg class="selected-check" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div class="card-icon-wrap amber">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="9" cy="9" r="2" />
+                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                        </svg>
+                    </div>
+                    <h2>Upload evidence</h2>
+                    <p>Photos, videos, screenshots, documents. We preserve exactly what you share, along with the date
+                        it was recorded.</p>
+                    <span class="method-cta cta-amber">Choose files →</span>
+                    <p class="micro-note">EXIF data (photo location & date) will be preserved if available.</p>
+                </button>
+
+            </div>
+
+            <!-- Active Input Areas -->
+            <div class="input-areas">
+
+                <!-- Text Area -->
+                <div class="input-area" id="area-text">
+                    <div class="text-input-wrap">
+                        <div class="text-toggle-bar">
+                            <button class="lang-toggle-btn"
+                                aria-label="Toggle input language between English and Hindi">EN | हिं</button>
+                        </div>
+                        <textarea class="memory-textarea" id="memoryText"
+                            placeholder="Begin wherever feels right. You can always add more later..."
+                            aria-label="Write your memory here"></textarea>
+                        <span class="word-count" id="wordCount">0 words</span>
+                    </div>
+                </div>
+
+                <!-- Voice Area -->
+                <div class="input-area" id="area-voice">
+                    <div class="voice-input-wrap">
+                        <button class="record-circle" id="recordBtn" aria-label="Start recording">
+                            <!-- Mic Icon default -->
+                            <svg class="icon-mic" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                                <rect x="9" y="2" width="6" height="11" rx="3" />
+                                <path d="M5 10a7 7 0 0 0 14 0" />
+                                <line x1="12" y1="19" x2="12" y2="22" />
+                            </svg>
+                            <!-- Stop Icon hidden -> shown on record -->
+                            <svg class="icon-stop" style="display:none;" width="32" height="32" viewBox="0 0 24 24"
+                                fill="currentColor" aria-hidden="true">
+                                <rect x="6" y="6" width="12" height="12" rx="2" />
+                            </svg>
+                            <!-- Play Icon hidden -> shown on recorded -->
+                            <svg class="icon-play" style="display:none;" width="32" height="32" viewBox="0 0 24 24"
+                                fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                        </button>
+
+                        <div class="voice-status" id="voiceStatus">Click to begin</div>
+
+                        <div class="voice-wave-large" id="voiceWave" aria-hidden="true">
+                            <div class="bar" style="animation-delay: 0.1s"></div>
+                            <div class="bar" style="animation-delay: 0.3s"></div>
+                            <div class="bar" style="animation-delay: 0.2s"></div>
+                            <div class="bar" style="animation-delay: 0.5s"></div>
+                            <div class="bar" style="animation-delay: 0.4s"></div>
+                            <div class="bar" style="animation-delay: 0.1s"></div>
+                            <div class="bar" style="animation-delay: 0.3s"></div>
+                            <div class="bar" style="animation-delay: 0.2s"></div>
+                            <div class="bar" style="animation-delay: 0.6s"></div>
+                            <div class="bar" style="animation-delay: 0.1s"></div>
+                            <div class="bar" style="animation-delay: 0.4s"></div>
+                            <div class="bar" style="animation-delay: 0.2s"></div>
+                        </div>
+
+                        <div class="voice-actions" id="voiceActions">
+                            <button class="voice-action-btn" id="voicePlayBtn">Play recording</button>
+                            <span style="color:var(--mauve); opacity:0.5;">|</span>
+                            <button class="voice-action-btn" id="voiceRerecordBtn">Discard & re-record</button>
+                        </div>
+
+                        <p class="voice-note">Recording is stored on this device first. It uploads automatically after a
+                            few seconds.</p>
+                    </div>
+                </div>
+
+                <!-- Media Area -->
+                <div class="input-area" id="area-media">
+                    <div class="media-dropzone" id="mediaDropzone" tabindex="0" role="button"
+                        aria-label="Drop files here or tap to choose">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <h3>Drop files here or tap to choose</h3>
+                        <p>Photos, videos, PDFs, and more. All formats welcomed.</p>
+                        <!-- hidden input -->
+                        <input type="file" id="mediaInput" multiple style="display:none">
+                    </div>
+
+                    <div class="media-files" id="mediaFilesList" aria-live="polite">
+                        <!-- Demor File Card -->
+                        <div class="media-file-card" style="display:none;" id="demoExifFile">
+                            <div class="media-thumb-small">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                    <circle cx="9" cy="9" r="2" />
+                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                </svg>
+                            </div>
+                            <div class="media-file-info">
+                                <span class="media-file-name">IMG_4922.jpg</span>
+                                <span class="media-file-size">2.4 MB</span>
+                            </div>
+                            <button class="media-remove" aria-label="Remove IMG_4922.jpg">×</button>
+                        </div>
+                    </div>
+
+                    <!-- EXIF notification -->
+                    <div class="exif-pill" id="exifPill" style="display:none;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Date taken: 14 Mar 2025 — Preserved for you
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Confidence Score -->
+            <div class="confidence-section">
+                <h3>How clearly do you remember this?</h3>
+                <p class="confidence-note">There is no wrong answer. Partial or unclear memories are just as important
+                    and valid. This rating is for your own reference.</p>
+
+                <div class="confidence-buttons" role="radiogroup" aria-label="Certainty rating">
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 1: Hazy"
+                            data-val="1">1</button>
+                        <span class="conf-label">Hazy</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 2: Partial"
+                            data-val="2">2</button>
+                        <span class="conf-label">Partial</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 3: Moderate"
+                            data-val="3">3</button>
+                        <span class="conf-label">Moderate</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 4: Clear"
+                            data-val="4">4</button>
+                        <span class="conf-label">Clear</span>
+                    </div>
+                    <div class="conf-btn-wrap">
+                        <button class="conf-btn" role="radio" aria-checked="false" aria-label="Rate 5: Very clear"
+                            data-val="5">5</button>
+                        <span class="conf-label">Very clear</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Action -->
+            <div class="save-section">
+                <button class="save-btn" id="saveMemBtn">Save this memory to my Safespace</button>
+                <div class="save-progress-wrap" id="saveProgressWrap">
+                    <span class="progress-label" id="progressLabel">Saving...</span>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="progressBar"></div>
+                    </div>
+                </div>
+                <p class="save-note" id="saveNote">Your memory is saved to this device immediately and backed up to your
+                    secure Safespace within 15 seconds.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Quick Exit -->
+    <div class="quick-exit-wrapper">
+        <span class="keyboard-hint" aria-hidden="true">⎋⎋</span>
+        <button class="quick-exit-btn" id="quickExitBtn" aria-label="Leave safely and securely">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12A10 10 0 0 0 11 2C8 2 5.5 3.5 3 6c0 0 1 8 6 12s12 3 12 3-1-4-3-9z" />
+                <path d="M21 21c-5-2-9-7-10-12" />
+            </svg>
+            <span class="exit-label">Leave Safely →</span>
+        </button>
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+
+        const SUPABASE_URL = 'https://jcikghzgduboseasubny.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_8CbBilkkiiJEHGRkvNcppg_WitEkWSf';
+
+        const supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
+        async function sha256Hex(text) {
+
+            const buffer = await crypto.subtle.digest(
+                'SHA-256',
+                new TextEncoder().encode(text)
+            );
+
+            return Array.from(
+                new Uint8Array(buffer)
+            )
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+
+        // Back Nav Animation
+        document.getElementById('navBack').addEventListener('click', (e) => {
+            e.preventDefault();
+            const panel = document.getElementById('slidePanel');
+            panel.style.animation = 'slideOut 320ms var(--ease-gentle) forwards';
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 300);
+        });
+
+        // Method Toggles
+        const methods = ['text', 'voice', 'media'];
+        methods.forEach(m => {
+            document.getElementById('btn-method-' + m).addEventListener('click', function () {
+                const isActive = this.classList.contains('selected');
+                this.classList.toggle('selected', !isActive);
+                this.setAttribute('aria-pressed', !isActive);
+                const area = document.getElementById('area-' + m);
+                if (!isActive) {
+                    area.classList.add('active');
+                } else {
+                    area.classList.remove('active');
+                }
+            });
+        });
+
+        // Textarea Word Count
+        const txtArea = document.getElementById('memoryText');
+        const wordCountText = document.getElementById('wordCount');
+        txtArea.addEventListener('input', () => {
+            const words = txtArea.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+            wordCountText.textContent = `${words} word${words === 1 ? '' : 's'}`;
+        });
+
+        // Voice Recording Simulation
+        const recordBtn = document.getElementById('recordBtn');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const voiceWave = document.getElementById('voiceWave');
+        const voiceActions = document.getElementById('voiceActions');
+        const iconMic = recordBtn.querySelector('.icon-mic');
+        const iconStop = recordBtn.querySelector('.icon-stop');
+        const iconPlay = recordBtn.querySelector('.icon-play');
+        let recordState = 'idle'; // idle, recording, done
+        let recInterval;
+        let recSeconds = 0;
+
+        function updateTimer() {
+            const m = Math.floor(recSeconds / 60);
+            const s = recSeconds % 60;
+            voiceStatus.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        recordBtn.addEventListener('click', () => {
+            if (recordState === 'idle') {
+                recordState = 'recording';
+                recordBtn.classList.add('recording');
+                iconMic.style.display = 'none';
+                iconStop.style.display = 'block';
+                voiceWave.classList.add('active');
+                recSeconds = 0;
+                updateTimer();
+                recInterval = setInterval(() => { recSeconds++; updateTimer(); }, 1000);
+            } else if (recordState === 'recording') {
+                recordState = 'done';
+                recordBtn.classList.remove('recording');
+                clearInterval(recInterval);
+                iconStop.style.display = 'none';
+                iconPlay.style.display = 'block';
+                voiceWave.classList.remove('active');
+                voiceStatus.textContent = `Recording — ${voiceStatus.textContent}`;
+                voiceActions.classList.add('active');
+            } else if (recordState === 'done') {
+                // Play simulation
+                alert("Playing recording...");
+            }
+        });
+
+        document.getElementById('voiceRerecordBtn').addEventListener('click', () => {
+            recordState = 'idle';
+            iconPlay.style.display = 'none';
+            iconMic.style.display = 'block';
+            voiceStatus.textContent = "Click to begin";
+            voiceActions.classList.remove('active');
+            recSeconds = 0;
+        });
+
+        // Media Input Simulation
+        const dropzone = document.getElementById('mediaDropzone');
+        const fileInput = document.getElementById('mediaInput');
+        const demoFile = document.getElementById('demoExifFile');
+        const exifPill = document.getElementById('exifPill');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+        dropzone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            demoFile.style.display = 'flex';
+            exifPill.style.display = 'inline-flex';
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                demoFile.style.display = 'flex';
+                exifPill.style.display = 'inline-flex';
+            }
+        });
+        demoFile.querySelector('.media-remove').addEventListener('click', () => {
+            demoFile.style.display = 'none';
+            exifPill.style.display = 'none';
+        });
+
+        let selectedConfidence = 3;
+
+        const confBtns = document.querySelectorAll('.conf-btn');
+
+        // Confidence Selector
+        confBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+
+                confBtns.forEach(b => {
+                    b.classList.remove('selected');
+                    b.setAttribute('aria-checked', 'false');
+                });
+
+                btn.classList.add('selected');
+                btn.setAttribute('aria-checked', 'true');
+
+                selectedConfidence = parseInt(
+                    btn.dataset.val,
+                    10
+                );
+            });
+        });
+
+        document.querySelector('[data-val="3"]').click();
+
+        let currentLanguage = 'en';
+        const langToggleBtn = document.querySelector('.lang-toggle-btn');
+        if (langToggleBtn) {
+            langToggleBtn.addEventListener('click', () => {
+                if (currentLanguage === 'en') {
+                    currentLanguage = 'hi';
+                    langToggleBtn.textContent = 'हिं | EN';
+                } else {
+                    currentLanguage = 'en';
+                    langToggleBtn.textContent = 'EN | हिं';
+                }
+            });
+        }
+
+        // Save Button Simulation
+        const saveBtn = document.getElementById('saveMemBtn');
+        const saveWrap = document.getElementById('saveProgressWrap');
+        const saveBar = document.getElementById('progressBar');
+        const saveLbl = document.getElementById('progressLabel');
+        const saveNote = document.getElementById('saveNote');
+
+        saveBtn.addEventListener('click', async () => {
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.7';
+            saveWrap.classList.add('active');
+            saveNote.style.display = 'none';
+
+            // Start 15s animation (mocked to 2s for ease of demo, but CSS transition says 15s. We'll do a quick finish)
+            saveBar.style.transition = "width 2s linear";
+            saveBar.style.width = '100%';
+
+            const activeCase = localStorage.getItem('activeCase');
+            const content = document.getElementById('memoryText').value;
+            const sha256_hash = await sha256Hex(content);
+
+            try {
+
+                const { data, error } =
+                    await supabaseClient
+                        .from('memories')
+                        .insert([
+                            {
+                                safespace_id: activeCase,
+                                type: 'text',
+                                content: content,
+                                confidence: selectedConfidence,
+                                sha256_hash: sha256_hash,
+                                language: currentLanguage
+                            }
+                        ]);
+
+                setTimeout(() => {
+                    saveLbl.textContent = 'Your memory has been kept safely.';
+                    saveLbl.style.color = 'var(--sage)';
+
+                    // Auto navigate back
+                    setTimeout(() => {
+                        const panel = document.getElementById('slidePanel');
+                        panel.style.animation = 'slideOut 320ms var(--ease-gentle) forwards';
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 300);
+                    }, 800);
+
+                }, 2000);
+            } catch (err) {
+                // Soft fallback, no trauma-triggering words
+                saveLbl.textContent = 'Please check your connection and try again.';
+                saveBtn.disabled = false;
+                saveBtn.style.opacity = '1';
+            }
+        });
+
+        // Quick Exit
+        const quickExitBtn = document.getElementById('quickExitBtn');
+        let lastEscape = 0;
+        let pressTimer;
+
+        function performSafeExit() {
+            window.history.replaceState(null, '', 'https://www.google.com');
+            window.location.replace('https://www.google.com');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const now = Date.now();
+                if (now - lastEscape < 500) performSafeExit();
+                lastEscape = now;
+            }
+        });
+        quickExitBtn.addEventListener('click', (e) => { e.preventDefault(); performSafeExit(); });
+        quickExitBtn.addEventListener('touchstart', () => { pressTimer = setTimeout(performSafeExit, 500); });
+        quickExitBtn.addEventListener('touchend', () => clearTimeout(pressTimer));
+        quickExitBtn.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+    </script>
+</body>
+
+</html>
