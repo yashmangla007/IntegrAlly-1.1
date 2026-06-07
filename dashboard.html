@@ -3555,23 +3555,51 @@
     let recInterval;
     let recSeconds = 0;
 
+    // MediaRecorder vars
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let currentVoiceBlob = null;
+    let audioPlayer = new Audio();
+
     function updateTimer() {
         const m = Math.floor(recSeconds / 60);
         const s = recSeconds % 60;
         voiceStatus.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    recordBtn.addEventListener('click', () => {
+    recordBtn.addEventListener('click', async () => {
         if (recordState === 'idle') {
-            recordState = 'recording';
-            recordBtn.classList.add('recording');
-            iconMic.style.display = 'none';
-            iconStop.style.display = 'block';
-            voiceWave.classList.add('active');
-            recSeconds = 0;
-            updateTimer();
-            recInterval = setInterval(() => { recSeconds++; updateTimer(); }, 1000);
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+
+                mediaRecorder.addEventListener("stop", () => {
+                    currentVoiceBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    // Stop microphone tracks
+                    stream.getTracks().forEach(track => track.stop());
+                });
+
+                mediaRecorder.start();
+
+                recordState = 'recording';
+                recordBtn.classList.add('recording');
+                iconMic.style.display = 'none';
+                iconStop.style.display = 'block';
+                voiceWave.classList.add('active');
+                recSeconds = 0;
+                updateTimer();
+                recInterval = setInterval(() => { recSeconds++; updateTimer(); }, 1000);
+            } catch (err) {
+                alert("Microphone access denied or error occurred.");
+                console.error("Audio recording error:", err);
+            }
         } else if (recordState === 'recording') {
+            mediaRecorder.stop();
             recordState = 'done';
             recordBtn.classList.remove('recording');
             clearInterval(recInterval);
@@ -3581,8 +3609,11 @@
             voiceStatus.textContent = `Recording — ${voiceStatus.textContent}`;
             voiceActions.classList.add('active');
         } else if (recordState === 'done') {
-            // Play simulation
-            alert("Playing recording...");
+            if (currentVoiceBlob) {
+                const audioUrl = URL.createObjectURL(currentVoiceBlob);
+                audioPlayer.src = audioUrl;
+                audioPlayer.play();
+            }
         }
     });
 
@@ -3593,6 +3624,18 @@
         voiceStatus.textContent = "Click to begin";
         voiceActions.classList.remove('active');
         recSeconds = 0;
+        currentVoiceBlob = null;
+        audioChunks = [];
+    });
+
+    document.getElementById('voicePlayBtn').addEventListener('click', () => {
+        if (currentVoiceBlob) {
+            const audioUrl = URL.createObjectURL(currentVoiceBlob);
+            audioPlayer.src = audioUrl;
+            audioPlayer.play();
+        } else {
+            console.warn("Audio is still processing or failed to save.");
+        }
     });
 
     // BEGIN PHASE 4
@@ -3669,9 +3712,10 @@
     saveBtn.addEventListener('click', async () => {
         const content = document.getElementById('memoryText').value.trim();
         const isMedia = currentMediaFile !== null;
+        const isVoice = typeof currentVoiceBlob !== 'undefined' && currentVoiceBlob !== null;
 
-        if (!content && !isMedia) {
-            alert('Please write down what you remember or attach a file before saving.');
+        if (!content && !isMedia && !isVoice) {
+            alert('Please write down what you remember, attach a file, or record audio before saving.');
             return;
         }
 
@@ -3690,8 +3734,25 @@
             let sha256_hash = '';
             let media_url = null;
             let type = 'text';
+            let memoryContent = content;
 
-            if (isMedia) {
+            if (isVoice) {
+                type = 'voice';
+                memoryContent = null;
+                const voiceFile = new File([currentVoiceBlob], 'voice.webm', { type: 'audio/webm' });
+                sha256_hash = await sha256File(voiceFile);
+                const fileName = `${activeCase}/${Date.now()}_voice.webm`;
+
+                const { data: uploadData, error: uploadError } = await supabaseClient
+                    .storage
+                    .from('evidence')
+                    .upload(fileName, voiceFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabaseClient.storage.from('evidence').getPublicUrl(fileName);
+                media_url = urlData.publicUrl;
+            } else if (isMedia) {
                 type = 'media';
                 sha256_hash = await sha256File(currentMediaFile);
                 const fileName = `${activeCase}/${Date.now()}_${currentMediaFile.name}`;
@@ -3715,7 +3776,7 @@
                     {
                         safespace_id: activeCase,
                         type: type,
-                        content: content,
+                        content: memoryContent,
                         confidence: selectedConfidence,
                         sha256_hash: sha256_hash,
                         media_url: media_url,
@@ -3756,6 +3817,17 @@
                 fileInput.value = '';
                 demoFile.style.display = 'none';
                 exifPill.style.display = 'none';
+
+                if (recordState !== 'idle') {
+                    recordState = 'idle';
+                    iconPlay.style.display = 'none';
+                    iconMic.style.display = 'block';
+                    voiceStatus.textContent = "Click to begin";
+                    voiceActions.classList.remove('active');
+                    recSeconds = 0;
+                    currentVoiceBlob = null;
+                    audioChunks = [];
+                }
                 // END PHASE 4
 
                 // 3. Reset confidence selector to 3
