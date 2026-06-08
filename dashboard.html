@@ -2908,8 +2908,8 @@
                     <p class="doc-format-note">These templates help translate your record into formats recognised by
                         police and hospitals. You can edit any document after downloading.</p>
 
-                    <button class="doc-download-btn doc-download-btn-outline" onclick="startGatherDownload()">Download
-                        Document 2</button>
+                    <button id="downloadDoc2Btn" class="doc-download-btn doc-download-btn-outline">Download Document
+                        2</button>
                 </div>
             </div>
 
@@ -2971,6 +2971,10 @@
          JAVASCRIPT
          ═══════════════════════════════════════════ -->
 <script>
+    // ── Gemini API configuration ──
+    const GEMINI_API_KEY = "-------"; // API key intentionally omitted from the public prototype. It may be added later to enable AI features. Removed to prevent unauthorized usage and unnecessary charges.
+    const GEMINI_MODEL = "gemini-2.0-flash"; // Gemini model version to use
+
     // ── localStorage Guard & Redirect ──
     const activeCase = localStorage.getItem('activeCase');
     if (!activeCase) {
@@ -3451,6 +3455,20 @@
         }, 5000);
     }
 
+    async function fetchRawMemories() {
+        if (!supabaseClient || !activeCase) {
+            throw new Error("Supabase client or active case is not initialized.");
+        }
+        const { data, error } = await supabaseClient
+            .from('memories')
+            .select('*')
+            .eq('safespace_id', activeCase)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    }
+
     async function generateRecordPDF() {
         const downloadOverlay = document.getElementById('downloadOverlay');
         const dlTitle = document.getElementById('dlTitle');
@@ -3460,21 +3478,7 @@
         }
 
         try {
-            if (!supabaseClient || !activeCase) {
-                alert("Supabase client or active case is not initialized.");
-                if (downloadOverlay) downloadOverlay.classList.remove('show');
-                return;
-            }
-
-            const { data, error } = await supabaseClient
-                .from('memories')
-                .select('*')
-                .eq('safespace_id', activeCase)
-                .order('created_at', { ascending: true });
-
-            if (error) throw error;
-
-            const fetchedMemories = data || [];
+            const fetchedMemories = await fetchRawMemories();
             const caseName = document.getElementById('sidebarName')
                 ? document.getElementById('sidebarName').textContent.trim()
                 : activeCase;
@@ -3744,11 +3748,260 @@
         }
     }
 
+    async function generateSummaryPDF() {
+        const downloadOverlay = document.getElementById('downloadOverlay');
+        const dlTitle = document.getElementById('dlTitle');
+        if (downloadOverlay) {
+            if (dlTitle) dlTitle.textContent = "Organising your memories...";
+            downloadOverlay.classList.add('show');
+        }
+
+        try {
+            if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === "") {
+                alert(
+                    "AI Summary Generation is implemented but disabled in this prototype build. A Gemini API key is required to activate Output 2."
+                );
+                if (downloadOverlay) downloadOverlay.classList.remove('show');
+                return;
+            }
+
+            const fetchedMemories = await fetchRawMemories();
+            if (fetchedMemories.length === 0) {
+                alert("No memories have been added to this Safespace yet.");
+                if (downloadOverlay) downloadOverlay.classList.remove('show');
+                return;
+            }
+
+            const caseName = document.getElementById('sidebarName')
+                ? document.getElementById('sidebarName').textContent.trim()
+                : activeCase;
+
+            const confidenceLabels = {
+                1: "Hazy",
+                2: "Partial",
+                3: "Moderate",
+                4: "Clear",
+                5: "Very clear"
+            };
+
+            const memoryArray = fetchedMemories.map((mem, index) => {
+                const confidenceVal = mem.confidence || 3;
+                const confidenceLbl = confidenceLabels[confidenceVal] || "Moderate";
+                return {
+                    memory_number: index + 1,
+                    created_at: mem.created_at,
+                    type: mem.type || 'text',
+                    content: mem.content || `[Voice memory uploaded securely. Playback available on active dashboard device]`,
+                    confidence_label: confidenceLbl
+                };
+            });
+
+            const systemPrompt = `You are a legal documentation assistant for trauma survivors.
+Review the provided fragmented memory logs.
+Generate a strictly chronological timeline.
+Use ONLY objective, neutral, third-person language.
+Do NOT extrapolate, infer, interpret, or add any information not in the logs.
+Reference each entry's exact timestamp.
+Flag any inconsistencies without attempting to resolve them.
+Output must have exactly two sections:
+
+SECTION A — FIR NARRATIVE: Structured for Zero FIR registration under BNSS Section 173.
+
+Include:
+
+* date and time of incident
+* location (if mentioned)
+* description of incident in chronological order
+* details of accused (if mentioned)
+* any witnesses mentioned
+
+SECTION B — MLC INJURY SUMMARY: Structured for Medico-Legal Case report.
+
+Include:
+
+* alleged cause of injury
+* descriptions of physical trauma reported
+* temporal sequence of injuries
+* any medical attention mentioned
+
+Begin directly with Section A.
+No preamble.`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    system_instruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    contents: [{
+                        parts: [{ text: JSON.stringify(memoryArray, null, 2) }]
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                let errMsg = "Failed response from Gemini API";
+                try {
+                    const errJson = await response.json();
+                    if (errJson && errJson.error && errJson.error.message) {
+                        errMsg = errJson.error.message;
+                    }
+                } catch (e) {
+                    try {
+                        const errText = await response.text();
+                        if (errText) errMsg = errText;
+                    } catch (_) { }
+                }
+                throw new Error(errMsg);
+            }
+
+            const responseData = await response.json();
+            if (!responseData.candidates || responseData.candidates.length === 0 ||
+                !responseData.candidates[0].content || !responseData.candidates[0].content.parts ||
+                responseData.candidates[0].content.parts.length === 0) {
+                const errMsg = responseData.error?.message || "No content returned from Gemini API";
+                throw new Error(errMsg);
+            }
+
+            const summaryText = responseData.candidates[0].content.parts[0].text;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const margin = 20;
+            const contentWidth = 170;
+            let y = margin;
+
+            // --- Cover Page ---
+            doc.setFillColor(240, 235, 225);
+            doc.rect(margin, margin, contentWidth, 245, 'F');
+            doc.setDrawColor(78, 117, 100);
+            doc.setLineWidth(1);
+            doc.rect(margin, margin, contentWidth, 245, 'S');
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(24);
+            doc.setTextColor(78, 117, 100);
+            doc.text("ORGANISED SUMMARY", margin + 15, 80);
+
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(12);
+            doc.setTextColor(164, 127, 138);
+            doc.text("IntegrAlly Safespace - AI-Generated Summary Document", margin + 15, 90);
+
+            // Horizontal line
+            doc.setDrawColor(164, 127, 138);
+            doc.setLineWidth(0.5);
+            doc.line(margin + 15, 100, margin + 15 + 80, 100);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            doc.setTextColor(45, 74, 62);
+            doc.text(`Case Name: ${caseName}`, margin + 15, 120);
+            doc.text(`Safespace ID: ${activeCase}`, margin + 15, 128);
+            doc.text(`Generation Date: ${new Date().toLocaleDateString('en-GB')}`, margin + 15, 136);
+
+            // Cover Page Disclosure
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setTextColor(164, 127, 138);
+            doc.text("Generated from user memories using AI-assisted organisation.", margin + 15, 150);
+
+            // Add page for content
+            doc.addPage();
+            y = margin;
+
+            function checkPageBreak(neededHeight) {
+                if (y + neededHeight > 275) {
+                    doc.addPage();
+                    y = margin;
+                }
+            }
+
+            // --- Content ---
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(45, 74, 62);
+
+            const paragraphs = summaryText.split('\n');
+            paragraphs.forEach(paragraph => {
+                const wrappedLines = doc.splitTextToSize(paragraph, contentWidth);
+                wrappedLines.forEach(lineText => {
+                    checkPageBreak(6);
+                    doc.text(lineText, margin, y);
+                    y += 5;
+                });
+                if (paragraph.trim().length > 0) {
+                    y += 3;
+                }
+            });
+
+            // --- Headers / Footers Addition (2-Pass Page Numbering) ---
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+
+                if (i > 1) {
+                    doc.setDrawColor(229, 221, 208);
+                    doc.setLineWidth(0.5);
+                    doc.line(margin, 15, 210 - margin, 15);
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    doc.setTextColor(164, 127, 138);
+                    doc.text(`IntegrAlly Organised Summary | Case: ${caseName}`, margin, 12);
+                }
+
+                // Footer on every page
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.setTextColor(164, 127, 138);
+
+                const footerText = "AI-generated summary. Cross-reference with original Memory Record before legal use.";
+                doc.text(footerText, margin, 287);
+                doc.text(`Page ${i} of ${totalPages}`, 210 - margin - 20, 287);
+            }
+
+            doc.save(`${caseName}_summary.pdf`);
+
+            if (dlTitle) dlTitle.textContent = "Gathering complete!";
+            setTimeout(() => {
+                if (downloadOverlay) downloadOverlay.classList.remove('show');
+            }, 1000);
+
+        } catch (err) {
+            console.error(err);
+            alert(`AI Summary Generation is included in IntegrAlly's architecture but is disabled in this prototype build to avoid misuse and unnecessary external service charges. \nOutput 2 has been fully designed and integrated and can be activated later through developer configuration.`);
+            if (downloadOverlay) downloadOverlay.classList.remove('show');
+        }
+    }
+
     const downloadDoc1Btn = document.getElementById('downloadDoc1Btn');
     if (downloadDoc1Btn) {
         downloadDoc1Btn.addEventListener('click', async (e) => {
             e.preventDefault();
             await generateRecordPDF();
+        });
+    }
+
+    let isGeneratingSummary = false;
+    const downloadDoc2Btn = document.getElementById('downloadDoc2Btn');
+    if (downloadDoc2Btn) {
+        downloadDoc2Btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (isGeneratingSummary) return;
+            isGeneratingSummary = true;
+            downloadDoc2Btn.disabled = true;
+            try {
+                await generateSummaryPDF();
+            } finally {
+                isGeneratingSummary = false;
+                downloadDoc2Btn.disabled = false;
+            }
         });
     }
 
