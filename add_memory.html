@@ -1481,15 +1481,23 @@
         let pressTimer;
 
         function performSafeExit() {
-            window.history.replaceState(null, '', 'https://www.google.com');
+            // location.replace() already replaces the history entry (no back-button exposure).
+            // history.replaceState() with a cross-origin URL throws a SecurityError in
+            // Chromium/Safari, which silently prevents location.replace() from running.
             window.location.replace('https://www.google.com');
         }
 
+        // Double-Escape detection — ignored when focus is inside a text input or textarea
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                const now = Date.now();
-                if (now - lastEscape < 500) performSafeExit();
-                lastEscape = now;
+                const tag = document.activeElement && document.activeElement.tagName;
+                const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' ||
+                    document.activeElement.isContentEditable;
+                if (!isEditable) {
+                    const now = Date.now();
+                    if (now - lastEscape < 500) performSafeExit();
+                    lastEscape = now;
+                }
             }
         });
         quickExitBtn.addEventListener('click', (e) => { e.preventDefault(); performSafeExit(); });

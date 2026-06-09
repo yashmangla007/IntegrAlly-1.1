@@ -296,7 +296,7 @@ The modal can always be dismissed via a small `×` button (32×32px, `var(--ivor
 **Auto-generated name field**:
 - A display area (not a plain input — a soft rounded rectangle, `var(--ivory)`, `var(--radius-md)`, 20px padding, full width)
 - Shows the auto-generated name in Lora 20px, `var(--sage-deep)` — e.g., **"Case-492-Blue-Fox"**
-- Below it, a small Nunito 12px `var(--mauve)` text: *"Auto-generated for you. Tap to change."*
+- Below it, a small Nunito 12px `var(--mauve)` text: *"Auto-generated for you. Tap to edit or refresh to generate new."*
 - A refresh icon (circular arrow, `var(--sage)`) to regenerate a new name
 - Tapping the name area turns it into an editable input field — same styling, cursor appears
 

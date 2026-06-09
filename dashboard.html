@@ -576,7 +576,7 @@
         /* ── MAIN PANEL ── */
         .main-panel {
             flex: 1;
-            height: 100vh;
+            height: 100%;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -1189,7 +1189,7 @@
 
         .gather-panel {
             position: absolute;
-            top: 0;
+            top: 64px;
             left: var(--sidebar-width);
             right: 0;
             bottom: 0;
@@ -2344,14 +2344,204 @@
                 border-left: none;
             }
         }
+
+        /* ── Logout Button & Message ── */
+        .action-btn-logout {
+            background: transparent;
+            border: 1.5px solid var(--mauve-light);
+        }
+
+        .action-btn-logout:hover {
+            background: rgba(164, 127, 138, 0.08);
+            border-color: var(--mauve);
+        }
+
+        .action-btn-logout .action-icon {
+            color: var(--mauve);
+        }
+
+        .action-btn-logout .action-label {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--mauve);
+        }
+
+        .action-btn-logout .action-sub {
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 300;
+            color: var(--mauve);
+            opacity: 0.8;
+        }
+
+        .action-btn-logout .action-arrow {
+            color: var(--mauve);
+        }
+
+        .logout-confirm-msg {
+            background: rgba(122, 158, 142, 0.08);
+            border: 1px solid rgba(122, 158, 142, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 20px;
+            font-family: var(--font-body);
+            animation: fadeInConfirm 300ms var(--ease-gentle) forwards;
+        }
+
+        .logout-msg-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--sage-deep);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .logout-msg-desc {
+            font-size: 13px;
+            color: var(--forest);
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        @keyframes fadeInConfirm {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Full Memory Modal Styles ── */
+        #memoryModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 31, 28, 0.4);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        #memoryModal.open {
+            display: flex;
+            animation: modalFadeIn 250ms var(--ease-gentle) forwards;
+        }
+
+        .modal-box {
+            background: var(--ivory-warm);
+            border: 1px solid rgba(164, 127, 138, 0.15);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            padding: 32px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            animation: modalSlideUp 300ms var(--ease-gentle) forwards;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: translateY(12px); }
+            to { transform: translateY(0); }
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: transparent;
+            border: none;
+            color: var(--mauve);
+            cursor: pointer;
+            font-size: 28px;
+            line-height: 1;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--duration-fast);
+        }
+
+        .modal-close-btn:hover {
+            background: var(--ivory-deep);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-right: 32px;
+        }
+
+        .modal-date {
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--mauve);
+            opacity: 0.8;
+        }
+
+        .modal-body-content {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 24px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            color: var(--forest);
+            line-height: 1.75;
+            padding-right: 8px;
+        }
+
+        .modal-memory-text {
+            white-space: pre-wrap;
+        }
+
+        .modal-footer-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid rgba(164, 127, 138, 0.15);
+            padding-top: 20px;
+        }
+
+        .read-full-btn {
+            background: transparent;
+            border: none;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sage);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            transition: color var(--duration-fast), background var(--duration-fast);
+        }
+
+        .read-full-btn:hover {
+            color: var(--sage-deep);
+            background: rgba(122, 158, 142, 0.05);
+        }
     </style>
 </head>
 <header class="global-nav">
     <!-- Logo/Wordmark -->
-    <a href="#" class="wordmark" aria-label="IntegrAlly Home">Integr<span>Ally</span></a>
+    <a href="index.html" class="wordmark" aria-label="IntegrAlly Home">Integr<span>Ally</span></a>
     <div class="spacer"></div>
     <!-- Language Toggle Pill -->
-    <button class="lang-toggle" aria-label="Toggle language">
+    <button class="lang-toggle" id="navLangToggle" aria-label="Language information">
         <span class="active">EN</span> | <span style="font-weight: 300; opacity: 0.8;">हिं</span>
     </button>
     <!-- Theme Toggle -->
@@ -2371,6 +2561,26 @@
         </svg>
     </button>
 </header>
+
+<!-- Language availability toast -->
+<div id="langToast" style="
+    display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%);
+    background:var(--ivory-warm); color:var(--forest);
+    border:1px solid rgba(164,127,138,0.20); border-radius:var(--radius-md);
+    box-shadow:var(--shadow-soft); padding:16px 22px; z-index:1000;
+    font-family:var(--font-body); font-size:14px; line-height:1.65;
+    max-width:340px; text-align:center;
+    animation:fadeInDown 200ms ease forwards;
+" role="status" aria-live="polite">
+    The interface is currently available in <strong>English</strong>.<br>
+    Support for a Hindi interface is planned in a future update.
+</div>
+<style>
+@keyframes fadeInDown {
+    from { opacity:0; transform:translateX(-50%) translateY(-8px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+</style>
 
 <!-- Drawer Overlay & Content -->
 <div class="help-drawer-overlay" id="helpOverlay" aria-hidden="true"></div>
@@ -2455,6 +2665,34 @@
                     </svg>
                 </span>
             </button>
+        </div>
+
+        <!-- Logout Action -->
+        <button class="action-btn action-btn-logout" id="logoutBtn"
+            aria-label="Log out of this Safespace" style="margin-bottom: 20px;">
+            <span class="action-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+            </span>
+            <span class="action-text">
+                <span class="action-label">Log Out</span>
+                <span class="action-sub">Safely end session</span>
+            </span>
+            <span class="action-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14M13 5l7 7-7 7" />
+                </svg>
+            </span>
+        </button>
+
+        <div id="logoutMsg" class="logout-confirm-msg" style="display: none;">
+            <p class="logout-msg-title">You have been logged out.</p>
+            <p class="logout-msg-desc">Your memories remain safely stored and can be accessed again using your Safespace name and PIN.</p>
         </div>
 
         <!-- Instructional note -->
@@ -2822,6 +3060,16 @@
     <main class="main-panel gather-panel panel-fade fade-out" id="gatherPanel" role="main" aria-label="Gather My Story"
         style="display: none;">
         <div class="gather-content">
+            <!-- Back link -->
+            <a href="#" class="nav-back" id="gatherBackBtn" aria-label="Go back to your memories timeline"
+                style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-body);font-size:13px;color:var(--mauve);text-decoration:none;margin-bottom:24px;transition:color var(--duration-fast);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to Your Memories
+            </a>
             <!-- Page Intro -->
             <div class="gather-intro">
                 <h1 class="gather-h1">Gathering your story</h1>
@@ -2963,6 +3211,25 @@
         </div>
         <p class="dl-note">You can close this at any time and come back. The documents will be ready when you return.
         </p>
+    </div>
+</div>
+
+<!-- Full Memory View Modal Overlay -->
+<div id="memoryModal" role="dialog" aria-modal="true" aria-labelledby="modalMemoryTitle">
+    <div class="modal-box">
+        <button class="modal-close-btn" id="closeMemoryModalBtn" aria-label="Close memory view">&times;</button>
+        <div class="modal-header">
+            <span class="type-badge" id="modalMemoryType"></span>
+            <span class="modal-date" id="modalMemoryDate"></span>
+        </div>
+        <div class="modal-body-content">
+            <div id="modalMemoryMedia" style="display: none; margin-bottom: 20px;"></div>
+            <div id="modalMemoryText" class="modal-memory-text"></div>
+        </div>
+        <div class="modal-footer-info">
+            <span class="confidence-label">Certainty</span>
+            <div class="confidence-dots" id="modalMemoryConfidence"></div>
+        </div>
     </div>
 </div>
 
@@ -3122,15 +3389,23 @@
     let pressTimer;
 
     function performSafeExit() {
-        window.history.replaceState(null, '', 'https://www.google.com');
+        // location.replace() already replaces the history entry (no back-button exposure).
+        // history.replaceState() with a cross-origin URL throws a SecurityError in
+        // Chromium/Safari, which silently prevents location.replace() from running.
         window.location.replace('https://www.google.com');
     }
 
+    // Double-Escape detection — ignored when focus is inside a text input or textarea
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            const now = Date.now();
-            if (now - lastEscape < 500) performSafeExit();
-            lastEscape = now;
+            const tag = document.activeElement && document.activeElement.tagName;
+            const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' ||
+                document.activeElement.isContentEditable;
+            if (!isEditable) {
+                const now = Date.now();
+                if (now - lastEscape < 500) performSafeExit();
+                lastEscape = now;
+            }
         }
     });
     quickExitBtn.addEventListener('click', (e) => { e.preventDefault(); performSafeExit(); });
@@ -3246,18 +3521,13 @@
                         </div>
                     </div>
                     <div class="card-bottom">
-                        <button class="card-menu-btn" aria-label="Memory actions" data-menu="${mem.id}">⋯</button>
-                        <div class="card-dropdown" id="dropdown-${mem.id}">
-                            <button data-action="read">Read in full</button>
-                            <button data-action="edit">Edit this memory</button>
-                            <button data-action="remove">Remove this memory</button>
-                        </div>
+                        <button class="read-full-btn" data-id="${mem.id}">Read in full →</button>
                     </div>
                 `;
 
             // Card click → expand
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.card-menu-btn') || e.target.closest('.card-dropdown')) return;
+                if (e.target.closest('.read-full-btn')) return;
                 const preview = card.querySelector('.card-preview');
                 const isExpanded = card.classList.toggle('expanded');
                 if (isExpanded) {
@@ -3267,6 +3537,15 @@
                 }
             });
 
+            // Read in full button click
+            const readFullBtn = card.querySelector('.read-full-btn');
+            if (readFullBtn) {
+                readFullBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openMemoryModal(mem);
+                });
+            }
+
             node.appendChild(dot);
             node.appendChild(card);
             track.appendChild(node);
@@ -3275,7 +3554,6 @@
         // Rebuild SVG river path to match rendered track
         requestAnimationFrame(() => buildRiverSvg(sorted.length));
     }
-
     /* ── River SVG Generation ── */
     function buildRiverSvg(memCount) {
         const container = document.getElementById('timelineContainer');
@@ -3284,6 +3562,10 @@
 
         const cW = container.offsetWidth;   // full container pixel width
         const cH = Math.max(container.offsetHeight, track.offsetHeight + 100);
+
+        // Force SVG element to match the calculated dimensions to prevent scaling/clipping issues
+        svg.style.width = `${cW}px`;
+        svg.style.height = `${cH}px`;
 
         // River spans ~65% of container width, centred
         const riverW = cW * 0.65;
@@ -3393,16 +3675,78 @@
         renderTimeline(memories);
     });
 
-    // ── Card Dropdown Menus ──
-    document.addEventListener('click', (e) => {
-        const menuBtn = e.target.closest('.card-menu-btn');
-        // Close all
-        document.querySelectorAll('.card-dropdown.open').forEach(d => d.classList.remove('open'));
-        if (menuBtn) {
+    // ── Full Memory View Modal Logic ──
+    function openMemoryModal(mem) {
+        const modal = document.getElementById('memoryModal');
+        const typeEl = document.getElementById('modalMemoryType');
+        const dateEl = document.getElementById('modalMemoryDate');
+        const mediaEl = document.getElementById('modalMemoryMedia');
+        const textEl = document.getElementById('modalMemoryText');
+        const confEl = document.getElementById('modalMemoryConfidence');
+
+        if (!modal) return;
+
+        const typeIconMap = {
+            written: { label: 'Written', cls: 'written', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>' },
+            voice: { label: 'Voice', cls: 'voice', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>' },
+            media: { label: 'Media', cls: 'media', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>' }
+        };
+        const tInfo = typeIconMap[mem.type] || typeIconMap.written;
+        typeEl.className = `type-badge ${tInfo.cls}`;
+        typeEl.innerHTML = `${tInfo.icon} ${tInfo.label}`;
+
+        dateEl.textContent = formatDate(mem.date);
+
+        if (mem.type === 'media' && mem.media_url) {
+            mediaEl.style.display = 'block';
+            mediaEl.innerHTML = `<img src="${mem.media_url}" style="width:100%; max-height: 250px; object-fit: contain; border-radius: var(--radius-md); border: 1px solid rgba(164, 127, 138, 0.15);" alt="Uploaded media content">`;
+        } else if (mem.type === 'voice') {
+            mediaEl.style.display = 'block';
+            mediaEl.innerHTML = `
+                <div class="voice-wave" aria-label="Voice waveform visualization" style="margin-bottom: 0;">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>`;
+        } else {
+            mediaEl.style.display = 'none';
+            mediaEl.innerHTML = '';
+        }
+
+        textEl.textContent = mem.full || (mem.type === 'voice' ? '[Voice memory uploaded securely. Playback available on active dashboard device]' : '');
+
+        let dotsHTML = '';
+        const confidenceVal = mem.confidence || 3;
+        for (let d = 1; d <= 5; d++) {
+            dotsHTML += `<span class="conf-dot${d <= confidenceVal ? ' filled' : ''}" aria-hidden="true"></span>`;
+        }
+        confEl.innerHTML = dotsHTML;
+
+        modal.classList.add('open');
+    }
+
+    function closeMemoryModal() {
+        const modal = document.getElementById('memoryModal');
+        if (modal) {
+            modal.classList.remove('open');
+        }
+    }
+
+    const closeMemBtn = document.getElementById('closeMemoryModalBtn');
+    if (closeMemBtn) {
+        closeMemBtn.addEventListener('click', closeMemoryModal);
+    }
+    const memModal = document.getElementById('memoryModal');
+    if (memModal) {
+        memModal.addEventListener('click', (e) => {
+            if (e.target === memModal) {
+                closeMemoryModal();
+            }
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && memModal && memModal.classList.contains('open')) {
+            closeMemoryModal();
             e.stopPropagation();
-            const id = menuBtn.dataset.menu;
-            const dd = document.getElementById('dropdown-' + id);
-            dd.classList.toggle('open');
         }
     });
 
@@ -3442,6 +3786,19 @@
                 gatherPanel.classList.remove('fade-out');
             });
         }, 400); // match transition ms
+    });
+
+    // ── Back from Gather My Story ──
+    document.getElementById('gatherBackBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        gatherPanel.classList.add('fade-out');
+        setTimeout(() => {
+            gatherPanel.style.display = 'none';
+            timelinePanel.style.display = '';
+            requestAnimationFrame(() => {
+                timelinePanel.classList.remove('fade-out');
+            });
+        }, 400);
     });
 
     // ── Download Handling ──
@@ -4049,6 +4406,40 @@ No preamble.`;
             e.stopPropagation();
         }
     });
+
+    // ── Nav Language Toggle — info toast only ──
+    (function () {
+        const navLangBtn = document.getElementById('navLangToggle');
+        const toast = document.getElementById('langToast');
+        if (!navLangBtn || !toast) return;
+        let toastTimer;
+        function showToast() {
+            clearTimeout(toastTimer);
+            toast.style.display = 'block';
+            // restart the fade-in each time
+            toast.style.animation = 'none';
+            toast.offsetHeight; // reflow
+            toast.style.animation = '';
+            toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+        navLangBtn.addEventListener('click', (e) => { e.stopPropagation(); showToast(); });
+        document.addEventListener('click', () => { clearTimeout(toastTimer); toast.style.display = 'none'; });
+    })();
+
+    // ── Logout Logic ──
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutMsg = document.getElementById('logoutMsg');
+    if (logoutBtn && logoutMsg) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('activeCase');
+            logoutBtn.style.display = 'none';
+            logoutMsg.style.display = 'block';
+            setTimeout(() => {
+                window.location.replace('index.html');
+            }, 1500);
+        });
+    }
+
     // Add Memory Logic
     // Back Nav Animation
     document.getElementById('navBackTrigger').addEventListener('click', (e) => {
@@ -4068,6 +4459,17 @@ No preamble.`;
             const area = document.getElementById('area-' + m);
             if (!isActive) {
                 area.classList.add('active');
+                // Scroll the revealed section into view inside the slide panel
+                setTimeout(() => {
+                    area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    // Brief sage ring on first interactive element
+                    const firstInput = area.querySelector('textarea, button, [tabindex]');
+                    if (firstInput) {
+                        firstInput.style.transition = 'box-shadow 0.25s ease';
+                        firstInput.style.boxShadow = '0 0 0 3px rgba(122, 158, 142, 0.45)';
+                        setTimeout(() => { firstInput.style.boxShadow = ''; }, 1200);
+                    }
+                }, 50);
             } else {
                 area.classList.remove('active');
             }
@@ -4426,8 +4828,9 @@ No preamble.`;
                 slidePanelRef.classList.add('open');
             }
         });
-    });
+});
 </script>
+
 <!-- Custom Cursor -->
 <style>
     @media (pointer: fine) {

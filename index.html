@@ -136,8 +136,8 @@
             line-height: 1.75;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overflow: hidden;
-            /* No scroll on desktop */
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         h1,
@@ -1633,7 +1633,7 @@
         <a href="#" class="wordmark-nav" aria-label="IntegrAlly Home">Integr<span>Ally</span></a>
         <div class="spacer"></div>
         <!-- Language Toggle Pill -->
-        <button class="lang-toggle" aria-label="Toggle language">
+        <button class="lang-toggle" id="navLangToggle" aria-label="Language information">
             <span class="active">EN</span> | <span style="font-weight: 300; opacity: 0.8;">हिं</span>
         </button>
 
@@ -1654,6 +1654,26 @@
             </svg>
         </button>
     </header>
+
+    <!-- Language availability toast -->
+    <div id="langToast" style="
+        display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%);
+        background:var(--ivory-warm); color:var(--forest);
+        border:1px solid rgba(164,127,138,0.20); border-radius:var(--radius-md);
+        box-shadow:var(--shadow-soft); padding:16px 22px; z-index:1000;
+        font-family:var(--font-body); font-size:14px; line-height:1.65;
+        max-width:340px; text-align:center;
+        animation:fadeInDown 200ms ease forwards;
+    " role="status" aria-live="polite">
+        The interface is currently available in <strong>English</strong>.<br>
+        Support for a Hindi interface is planned in a future update.
+    </div>
+    <style>
+    @keyframes fadeInDown {
+        from { opacity:0; transform:translateX(-50%) translateY(-8px); }
+        to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    }
+    </style>
 
     <!-- Drawer Overlay & Content -->
     <div class="help-drawer-overlay" id="helpOverlay" aria-hidden="true"></div>
@@ -1851,7 +1871,8 @@
                         <div class="name-display" id="nameDisplay" role="button" tabindex="0"
                             aria-label="Tap to edit your Safespace name">
                             <span class="name-display-text" id="nameDisplayText">Case-492-Blue-Fox</span>
-                            <span class="name-display-hint">Auto-generated for you. Tap to change.</span>
+                            <span class="name-display-hint">Auto-generated for you. Tap to edit or refresh to generate
+                                new.</span>
                         </div>
                         <input type="text" class="name-input" id="nameInput" aria-label="Your Safespace name">
                         <button class="name-refresh" id="nameRefresh" aria-label="Generate a new Safespace name">
@@ -2084,24 +2105,49 @@
          JAVASCRIPT
          ═══════════════════════════════════════════ -->
     <script>
+        // ── Nav Language Toggle — info toast only ──
+        (function () {
+            const navLangBtn = document.getElementById('navLangToggle');
+            const toast = document.getElementById('langToast');
+            if (!navLangBtn || !toast) return;
+            let toastTimer;
+            function showToast() {
+                clearTimeout(toastTimer);
+                toast.style.display = 'block';
+                toast.style.animation = 'none';
+                toast.offsetHeight;
+                toast.style.animation = '';
+                toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+            }
+            navLangBtn.addEventListener('click', (e) => { e.stopPropagation(); showToast(); });
+            document.addEventListener('click', () => { clearTimeout(toastTimer); toast.style.display = 'none'; });
+        })();
+
         // --- Quick Exit ---
         const quickExitBtn = document.getElementById('quickExitBtn');
         let lastEscape = 0;
         let pressTimer;
 
         function performSafeExit() {
-            window.history.replaceState(null, '', 'https://www.google.com');
+            // location.replace() already replaces the history entry (no back-button exposure).
+            // history.replaceState() with a cross-origin URL throws a SecurityError in
+            // Chromium/Safari, which silently prevents location.replace() from running.
             window.location.replace('https://www.google.com');
         }
 
-        // Double-Escape detection
+        // Double-Escape detection — ignored when focus is inside a text input or textarea
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                const now = Date.now();
-                if (now - lastEscape < 500) {
-                    performSafeExit();
+                const tag = document.activeElement && document.activeElement.tagName;
+                const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' ||
+                    document.activeElement.isContentEditable;
+                if (!isEditable) {
+                    const now = Date.now();
+                    if (now - lastEscape < 500) {
+                        performSafeExit();
+                    }
+                    lastEscape = now;
                 }
-                lastEscape = now;
             }
         });
 
