@@ -371,25 +371,6 @@
             opacity: 0.85;
         }
 
-        @media (max-width: 480px) {
-            .global-nav {
-                padding: 0 16px;
-            }
-
-            .wordmark {
-                font-size: 18px;
-            }
-
-            .help-drawer {
-                width: 100%;
-                right: -100%;
-            }
-
-            .help-drawer.open {
-                transform: translateX(-100%);
-            }
-        }
-
         /* ═══════════════════════════════════════════
            DASHBOARD LAYOUT — 2-COLUMN
            ═══════════════════════════════════════════ */
@@ -1585,95 +1566,6 @@
             }
         }
 
-        @media (max-width: 767px) {
-            body {
-                overflow: auto;
-            }
-
-            .dashboard {
-                flex-direction: column;
-                height: auto;
-            }
-
-            .sidebar {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                height: auto;
-                max-height: 70vh;
-                border-right: none;
-                border-top: 1px solid rgba(164, 127, 138, 0.12);
-                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-                box-shadow: var(--shadow-card);
-                z-index: 500;
-                transform: translateY(100%);
-                transition: transform var(--duration-slow) var(--ease-gentle);
-            }
-
-            .sidebar.open {
-                transform: translateY(0);
-            }
-
-            .mobile-fab {
-                display: flex;
-            }
-
-            .main-panel {
-                height: auto;
-                overflow: visible;
-            }
-
-            .gather-panel {
-                position: relative;
-                left: 0;
-                top: 0;
-                bottom: auto;
-            }
-
-            .gather-content {
-                padding: 24px 16px 120px;
-            }
-
-            .timeline-container {
-                padding: 20px 16px 120px;
-            }
-
-            .memory-node.left,
-            .memory-node.right {
-                padding-left: 0;
-                padding-right: 0;
-                justify-content: center;
-            }
-
-            .stone-dot {
-                display: none;
-            }
-
-            .river-svg {
-                display: none;
-            }
-
-            .quick-exit-wrapper {
-                bottom: 24px;
-                right: 24px;
-            }
-
-            .quick-exit-btn {
-                width: 52px;
-                height: 52px;
-                gap: 0;
-            }
-
-            .quick-exit-btn .exit-label {
-                display: none;
-            }
-
-            .keyboard-hint {
-                display: none;
-            }
-        }
 
         /* ═══════════════════════════════════════════
    SLIDE PANEL (Added)
@@ -2552,6 +2444,227 @@
             color: var(--sage-deep);
             background: rgba(122, 158, 142, 0.05);
         }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE — MOBILE (max-width: 767px)
+           ═══════════════════════════════════════════ */
+        @media (max-width: 767px) {
+            body {
+                overflow: auto;
+            }
+
+            .global-nav {
+                z-index: 700;
+            }
+
+            .lang-toggle,
+            .theme-toggle,
+            .help-btn {
+                flex-shrink: 0;
+            }
+
+            .dashboard {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .sidebar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: auto;
+                max-height: 70vh;
+                border-right: none;
+                border-top: 1px solid rgba(164, 127, 138, 0.12);
+                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+                box-shadow: var(--shadow-card);
+                z-index: 500;
+                transform: translateY(100%);
+                transition: transform var(--duration-slow) var(--ease-gentle);
+            }
+
+            .sidebar.open {
+                transform: translateY(0);
+            }
+
+            .sidebar-handle {
+                display: block;
+                width: 36px;
+                height: 4px;
+                background: rgba(164, 127, 138, 0.25);
+                border-radius: 2px;
+                margin: 12px auto 8px;
+            }
+
+            .mobile-fab {
+                display: flex;
+                bottom: 100px;
+            }
+
+            .main-panel {
+                height: auto;
+                overflow-y: visible;
+            }
+
+            .timeline-container {
+                padding: 20px 16px 120px;
+            }
+
+            .memory-node.left,
+            .memory-node.right {
+                padding-left: 0;
+                padding-right: 0;
+                justify-content: center;
+            }
+
+            .memory-card {
+                width: 100%;
+                max-width: 340px;
+            }
+
+            .stone-dot {
+                display: none;
+            }
+
+            .river-svg {
+                display: none;
+            }
+
+            .quick-exit-wrapper {
+                bottom: 24px;
+                right: 24px;
+            }
+
+            .quick-exit-btn {
+                width: 52px;
+                height: 52px;
+                gap: 0;
+            }
+
+            .quick-exit-btn .exit-label {
+                display: none;
+            }
+
+            .keyboard-hint {
+                display: none;
+            }
+
+            /* Gather Panel Mobile Modal Overlay */
+            .gather-panel {
+                position: fixed;
+                inset: 0;
+                z-index: 602;
+                overflow-y: auto;
+                left: 0;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            .gather-content {
+                padding: 72px 20px 100px;
+            }
+
+            .doc-cards {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            /* Slide Panel Mobile Modal Overlay */
+            .slide-panel {
+                position: fixed;
+                inset: 0;
+                z-index: 600;
+                overflow-y: auto;
+                max-width: 100%;
+                width: 100%;
+                border-left: none;
+                transform: translateY(12px);
+                opacity: 0;
+            }
+
+            @keyframes mobileSlideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(12px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes mobileSlideOut {
+                from {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+
+                to {
+                    opacity: 0;
+                    transform: translateY(12px);
+                }
+            }
+
+            .slide-panel.open {
+                display: flex;
+                animation: mobileSlideIn 320ms var(--ease-gentle) forwards;
+            }
+
+            .slide-panel.closing {
+                animation: mobileSlideOut 320ms var(--ease-gentle) forwards;
+            }
+
+            .panel-content {
+                padding: 72px 20px 100px;
+                gap: 32px;
+            }
+
+            .method-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .confidence-buttons {
+                gap: 12px;
+            }
+
+            .conf-btn {
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE — MOBILE (max-width: 480px)
+           ═══════════════════════════════════════════ */
+        @media (max-width: 480px) {
+            .global-nav {
+                padding: 0 16px;
+            }
+
+            .wordmark {
+                font-size: 18px;
+            }
+
+            .lang-toggle {
+                padding: 0 8px;
+                font-size: 12px;
+            }
+
+            .help-drawer {
+                width: 100%;
+                right: -100%;
+            }
+
+            .help-drawer.open {
+                transform: translateX(-100%);
+            }
+        }
     </style>
 </head>
 <header class="global-nav">
@@ -2638,6 +2751,8 @@
              SIDEBAR
              ═══════════════════════════════════════════ -->
     <aside class="sidebar" id="sidebar" role="complementary" aria-label="Safespace sidebar">
+        <!-- Drag Handle for Mobile -->
+        <div class="sidebar-handle" aria-hidden="true"></div>
 
         <!-- Greeting -->
         <div class="sidebar-greeting">
@@ -3196,9 +3311,11 @@
 
 <!-- Mobile FAB -->
 <button class="mobile-fab" id="mobileFab" aria-label="Open sidebar actions">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-        aria-hidden="true">
-        <path d="M12 22 C12 14, 7 10, 4 5 Q8 9, 12 8 Q16 9, 20 5 C17 10, 12 14, 12 22Z" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
     </svg>
 </button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
