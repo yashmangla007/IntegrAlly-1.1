@@ -2405,8 +2405,15 @@
         }
 
         @keyframes fadeInConfirm {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ── Full Memory Modal Styles ── */
@@ -2444,14 +2451,25 @@
         }
 
         @keyframes modalFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes modalSlideUp {
-            from { transform: translateY(12px); }
-            to { transform: translateY(0); }
+            from {
+                transform: translateY(12px);
+            }
+
+            to {
+                transform: translateY(0);
+            }
         }
+
         .modal-close-btn {
             position: absolute;
             top: 20px;
@@ -2576,10 +2594,17 @@
     Support for a Hindi interface is planned in a future update.
 </div>
 <style>
-@keyframes fadeInDown {
-    from { opacity:0; transform:translateX(-50%) translateY(-8px); }
-    to   { opacity:1; transform:translateX(-50%) translateY(0); }
-}
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
 </style>
 
 <!-- Drawer Overlay & Content -->
@@ -2668,8 +2693,8 @@
         </div>
 
         <!-- Logout Action -->
-        <button class="action-btn action-btn-logout" id="logoutBtn"
-            aria-label="Log out of this Safespace" style="margin-bottom: 20px;">
+        <button class="action-btn action-btn-logout" id="logoutBtn" aria-label="Log out of this Safespace"
+            style="margin-bottom: 20px;">
             <span class="action-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -2692,7 +2717,8 @@
 
         <div id="logoutMsg" class="logout-confirm-msg" style="display: none;">
             <p class="logout-msg-title">You have been logged out.</p>
-            <p class="logout-msg-desc">Your memories remain safely stored and can be accessed again using your Safespace name and PIN.</p>
+            <p class="logout-msg-desc">Your memories remain safely stored and can be accessed again using your Safespace
+                name and PIN.</p>
         </div>
 
         <!-- Instructional note -->
@@ -4828,7 +4854,7 @@ No preamble.`;
                 slidePanelRef.classList.add('open');
             }
         });
-});
+    });
 </script>
 
 <!-- Custom Cursor -->
